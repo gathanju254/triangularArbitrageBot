@@ -1,5 +1,5 @@
 # backend/arbitrage_bot/urls.py
-from django.urls import path, include
+from django.urls import path
 from . import views
 
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path('trading/history/', views.get_trade_history, name='get_trade_history'),
     path('settings/', views.get_settings, name='get_settings'),
     path('settings/update/', views.update_settings, name='update_settings'),
+    path('health/', views.health_check, name='health_check'),  # Added health endpoint
 ]
