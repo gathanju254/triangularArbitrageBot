@@ -1,0 +1,14 @@
+{
+    "binance": {
+        "name": "Binance",
+        "base_url": "https://api.binance.com",
+        "websocket_url": "wss://stream.binance.com:9443/ws",
+        "supported_pairs": ["BTC/USDT", "ETH/USDT", "BNB/USDT", "ADA/USDT", "DOT/USDT", "LINK/USDT", "LTC/USDT", "BCH/USDT", "XRP/USDT", "EOS/USDT"]
+    },
+    "kraken": {
+        "name": "Kraken",
+        "base_url": "https://api.kraken.com",
+        "websocket_url": "wss://ws.kraken.com",
+        "supported_pairs": ["XBT/USD", "ETH/USD", "ADA/USD", "DOT/USD", "LINK/USD", "LTC/USD", "BCH/USD", "XRP/USD"]
+    }
+}

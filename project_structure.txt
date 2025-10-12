@@ -1,0 +1,47 @@
+triangularArbitrageBot/
+├── backend/
+│   ├── arbitrage_bot/
+│   │   ├── __init__.py
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── arbitrage_engine.py
+│   │   │   ├── market_data.py
+│   │   │   ├── order_execution.py
+│   │   │   └── risk_manager.py
+│   │   ├── exchanges/
+│   │   │   ├── __init__.py
+│   │   │   ├── base_exchange.py
+│   │   │   ├── binance.py
+│   │   │   └── kraken.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── arbitrage_opportunity.py
+│   │   │   └── trade.py
+│   │   ├── utils/
+│   │   │   ├── __init__.py
+│   │   │   ├── logger.py
+│   │   │   └── helpers.py
+│   │   └── tasks.py
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── settings.py
+│   │   └── exchanges.json
+│   ├── manage.py
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Dashboard.js
+│   │   │   ├── Opportunities.js
+│   │   │   ├── Trading.js
+│   │   │   └── Settings.js
+│   │   ├── styles/
+│   │   │   └── main.css
+│   │   ├── utils/
+│   │   │   └── api.js
+│   │   └── index.html
+│   ├── package.json
+│   └── tailwind.config.js
+├── docker-compose.yml
+└── README.md
