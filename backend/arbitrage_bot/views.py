@@ -21,62 +21,47 @@ def initialize_system():
     """Initialize system components with comprehensive sample data"""
     global market_data_manager_instance, arbitrage_engine_instance
     
-    logger.info("Initializing arbitrage system components...")
+    logger.info("Initializing arbitrage system with sample data...")
     
-    # Comprehensive sample prices for realistic arbitrage opportunities
-    sample_prices = {
-        # Major USD pairs
-        'BTC/USDT': 45000.0,
-        'ETH/USDT': 2700.0,
-        'BNB/USDT': 320.0,
-        'ADA/USDT': 0.55,
-        'DOT/USDT': 6.5,
-        'LINK/USDT': 14.2,
-        'LTC/USDT': 68.0,
-        'BCH/USDT': 240.0,
-        'XRP/USDT': 0.52,
-        
-        # BTC pairs
-        'ETH/BTC': 0.06,
-        'BNB/BTC': 0.0071,
-        'ADA/BTC': 0.000012,
-        'DOT/BTC': 0.000144,
-        'LINK/BTC': 0.000315,
-        
-        # ETH pairs
-        'ADA/ETH': 0.0002,
-        'DOT/ETH': 0.0024,
-        'LINK/ETH': 0.0052,
-        
-        # Inverse pairs for triangular arbitrage
-        'USDT/BTC': 0.000022,
-        'USDT/ETH': 0.00037,
-        'BTC/ADA': 83333.33,
-        'ETH/ADA': 5000.0,
-        
-        # Additional pairs for more opportunities
-        'BNB/ETH': 0.1185,
-        'LTC/BTC': 0.0015,
-        'BCH/BTC': 0.0053,
-        'XRP/BTC': 0.0000115
-    }
+    # Always use sample data for demo purposes
+    market_data_manager_instance.add_sample_prices()
     
-    # Update market data manager with sample prices
-    market_data_manager_instance.update_prices('sample', sample_prices)
-    
-    # Initialize triangles with available symbols
+    # Get symbols from sample prices
+    sample_prices = market_data_manager_instance.get_all_prices()
     symbols = list(sample_prices.keys())
+    
+    logger.info(f"Available symbols: {symbols}")
+    
+    # Initialize triangles
     triangles_found = arbitrage_engine_instance.find_triangles(symbols)
     
+    # If no triangles found, manually add some common ones
+    if not triangles_found:
+        logger.warning("No triangles found automatically, adding manual triangles")
+        manual_triangles = [
+            ['BTC/USDT', 'ETH/BTC', 'ETH/USDT'],
+            ['ETH/USDT', 'ADA/ETH', 'ADA/USDT'],
+            ['BTC/USDT', 'BNB/BTC', 'BNB/USDT'],
+            ['ETH/USDT', 'DOT/ETH', 'DOT/USDT'],
+            ['BTC/USDT', 'LINK/BTC', 'LINK/USDT'],
+        ]
+        # Filter to only include triangles where all pairs exist
+        for triangle in manual_triangles:
+            if all(pair in symbols for pair in triangle):
+                triangles_found.append(triangle)
+                logger.info(f"Added manual triangle: {triangle}")
+        
+        arbitrage_engine_instance.triangles = triangles_found
+    
     # Log initialization details
-    logger.info(f"✅ System initialized successfully:")
+    logger.info(f"✅ System initialized with sample data:")
     logger.info(f"   - {len(sample_prices)} sample prices loaded")
     logger.info(f"   - {len(triangles_found)} triangular paths detected")
     logger.info(f"   - Minimum profit threshold: {arbitrage_engine_instance.min_profit_threshold}%")
     
-    # Scan for initial opportunities
+    # Scan for initial opportunities with sample data
     price_values = {}
-    for symbol, price_data in market_data_manager_instance.get_all_prices().items():
+    for symbol, price_data in sample_prices.items():
         if isinstance(price_data, dict) and 'price' in price_data:
             price_values[symbol] = price_data['price']
         else:
@@ -84,6 +69,10 @@ def initialize_system():
     
     initial_opportunities = arbitrage_engine_instance.scan_opportunities(price_values)
     logger.info(f"   - {len(initial_opportunities)} initial opportunities found")
+    
+    # Log some opportunity details
+    for i, opp in enumerate(initial_opportunities[:3]):
+        logger.info(f"     Opportunity {i+1}: {opp.triangle} - {opp.profit_percentage:.4f}%")
 
 # Call initialization when module loads
 initialize_system()
@@ -102,6 +91,19 @@ def get_opportunities(request):
                 price_values[symbol] = price_data['price']
             else:
                 price_values[symbol] = price_data
+        
+        # If no prices available, use sample data
+        if not price_values:
+            logger.warning("No real-time prices available, using sample data")
+            # Force reinitialize with sample data
+            initialize_system()
+            # Get prices again
+            current_prices = market_data_manager_instance.get_all_prices()
+            for symbol, price_data in current_prices.items():
+                if isinstance(price_data, dict) and 'price' in price_data:
+                    price_values[symbol] = price_data['price']
+                else:
+                    price_values[symbol] = price_data
         
         # Get real opportunities from the engine
         opportunities = arbitrage_engine_instance.scan_opportunities(price_values)

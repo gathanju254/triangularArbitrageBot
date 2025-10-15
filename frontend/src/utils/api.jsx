@@ -92,17 +92,17 @@ export const arbitrageAPI = {
     // Performance
     getPerformance: () => api.get('/performance/'),
     
-    // Trading
+    // Trading (fixed endpoint)
     executeTrade: (triangle, amount, exchange = 'binance') => 
-        api.post('/execute_trade/', { triangle, amount, exchange }),
+        api.post('/trading/execute/', { triangle, amount, exchange }),
     getTradeHistory: () => api.get('/trading/history/'),
     
-    // Settings
-    updateSettings: (settings) => api.post('/update_settings/', { settings }),
+    // Settings (fixed endpoint)
+    updateSettings: (settings) => api.post('/settings/update/', { settings }),
     getSettings: () => api.get('/settings/'),
     
-    // Health check
-    healthCheck: () => api.get('/health_check/'),
+    // Health check (fixed endpoint)
+    healthCheck: () => api.get('/health/'),
     
     // System management
     resetSystem: () => api.post('/reset_system/'),

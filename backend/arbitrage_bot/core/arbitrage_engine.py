@@ -26,46 +26,54 @@ class ArbitrageEngine:
             except ValueError:
                 logger.warning(f"Invalid symbol format: {symbol}")
                 continue
-        
+
         if not valid_symbols:
             logger.warning("No valid symbols found for triangle detection")
             return []
-        
-        # Get base currencies from valid symbols
-        base_currencies = set()
+
+        # Build currency graph: base -> list of (quote, pair)
+        graph = {}
         for symbol in valid_symbols:
             try:
                 base, quote = symbol.split('/')
-                base_currencies.add(base)
-                base_currencies.add(quote)
+                graph.setdefault(base, []).append((quote, symbol))
+                # ensure node exists for quote so traversal is safe
+                graph.setdefault(quote, [])
             except ValueError:
                 continue
-        
+
         triangles = []
-        
-        for base in base_currencies:
-            # Find pairs that start with base currency
-            first_pairs = [s for s in valid_symbols if s.split('/')[0] == base]
-            
-            for first_pair in first_pairs:
-                intermediate_currency = first_pair.split('/')[1]
-                
-                # Find pairs that start with intermediate currency
-                second_pairs = [s for s in valid_symbols if s.split('/')[0] == intermediate_currency]
-                
-                for second_pair in second_pairs:
-                    final_currency = second_pair.split('/')[1]
-                    
-                    # Find pair that converts back to base currency
-                    third_pair = f"{final_currency}/{base}"
-                    if third_pair in valid_symbols:
-                        triangle = [first_pair, second_pair, third_pair]
-                        # Avoid duplicate triangles
-                        if triangle not in triangles:
-                            triangles.append(triangle)
-        
+        visited = set()
+
+        # Find all 3-currency cycles (currency1 -> currency2 -> currency3 -> currency1)
+        for currency1 in graph:
+            if currency1 not in self.supported_currencies:
+                continue
+
+            for currency2, pair1 in graph.get(currency1, []):
+                if currency2 not in graph:
+                    continue
+
+                for currency3, pair2 in graph.get(currency2, []):
+                    if currency3 == currency1:
+                        continue
+
+                    # third leg: currency3 -> currency1
+                    for dest, pair3 in graph.get(currency3, []):
+                        if dest == currency1:
+                            triangle = [pair1, pair2, pair3]
+                            # canonical key to avoid duplicates regardless of ordering
+                            triangle_key = tuple(sorted(triangle))
+                            if triangle_key not in visited:
+                                triangles.append(triangle)
+                                visited.add(triangle_key)
+
         self.triangles = triangles
         logger.info(f"Found {len(triangles)} triangular paths from {len(valid_symbols)} symbols")
+
+        if triangles:
+            logger.info(f"Triangle examples: {triangles[:3]}")
+
         return triangles
     
     def calculate_arbitrage(self, prices: Dict[str, float], triangle: List[str]) -> Optional[ArbitrageOpportunity]:

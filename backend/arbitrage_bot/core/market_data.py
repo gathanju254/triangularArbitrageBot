@@ -4,37 +4,72 @@ import logging
 import threading
 import time
 from typing import Dict, Callable, List, Optional
-
-# Use the standard websocket-client package
-try:
-    import websocket
-    WEBSOCKET_AVAILABLE = True
-except ImportError:
-    WEBSOCKET_AVAILABLE = False
-    logging.warning("websocket-client package not installed. Please run: pip install websocket-client")
+import importlib
 
 logger = logging.getLogger(__name__)
+
+# Use a robust import strategy for websocket-client
+WEBSOCKET_AVAILABLE = False
+websocket = None
+WebSocketApp = None
+
+try:
+    # Try to import the public API first
+    websocket = importlib.import_module('websocket')
+    WebSocketApp = getattr(websocket, 'WebSocketApp', None)
+
+    # If not exposed on package root, try the internal module where it's implemented
+    if WebSocketApp is None:
+        try:
+            _app = importlib.import_module('websocket._app')
+            WebSocketApp = getattr(_app, 'WebSocketApp', None)
+        except Exception:
+            WebSocketApp = None
+
+    if WebSocketApp and websocket:
+        # Ensure the attribute is accessible on the module object
+        setattr(websocket, 'WebSocketApp', WebSocketApp)
+        WEBSOCKET_AVAILABLE = True
+    else:
+        raise ImportError("WebSocketApp not found in 'websocket' package")
+
+except Exception as e:
+    WEBSOCKET_AVAILABLE = False
+    websocket = None
+    WebSocketApp = None
+    logger.warning(
+        "websocket-client not available or wrong 'websocket' package installed. "
+        "Install websocket-client ([pip install websocket-client](http://_vscodecontentref_/2)) and ensure no local module named "
+        "'websocket.py' shadows it. Details: %s", e
+    )
 
 class MarketDataManager:
     def __init__(self):
         self.exchanges = {
-            'binance': None,  # We'll initialize these when needed
+            'binance': None,
             'kraken': None
         }
         self.prices = {}
         self.subscribers: List[Callable] = []
         self.ws_connections = {}
+        self.ws_lock = threading.Lock()
         self.is_connected = False
         self._system_running = True
         self.last_update_time = {}
         self.reconnect_attempts = {}
         self.max_reconnect_attempts = 5
+        self._health_thread = None
+        self._health_thread_stop = threading.Event()
         
-        # Supported trading pairs for WebSocket streams
+        # Supported currencies for symbol formatting
+        self.supported_currencies = ['BTC', 'ETH', 'USDT', 'ADA', 'BNB', 'DOT', 'LINK', 'LTC', 'BCH', 'XRP', 'EOS']
+        
+        # Accept both formatted symbols ("BTC/USDT") and exchange style ("BTCUSDT")
         self.supported_pairs = [
-            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'DOTUSDT',
-            'LINKUSDT', 'LTCUSDT', 'BCHUSDT', 'XRPUSDT', 'EOSUSDT',
-            'ETHBTC', 'ADABTC', 'DOTBTC', 'LINKBTC', 'LTCBTC'
+            'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'ADA/USDT', 'DOT/USDT',
+            'LINK/USDT', 'LTC/USDT', 'BCH/USDT', 'XRP/USDT', 'EOS/USDT',
+            'ETH/BTC', 'ADA/BTC', 'DOT/BTC', 'LINK/BTC', 'LTC/BTC',
+            'BNB/ETH', 'ADA/ETH', 'DOT/ETH', 'LINK/ETH'
         ]
         
     def subscribe_prices(self, callback: Callable):
@@ -55,12 +90,20 @@ class MarketDataManager:
         
         # Update prices with timestamp
         for symbol, price in new_prices.items():
-            self.prices[symbol] = {
+            # Ensure we have the proper symbol format
+            formatted_symbol = self._format_symbol(symbol)
+            
+            self.prices[formatted_symbol] = {
                 'price': price,
                 'exchange': exchange,
                 'timestamp': timestamp
             }
-            self.last_update_time[symbol] = timestamp
+            self.last_update_time[formatted_symbol] = timestamp
+        
+        # Log price updates for debugging
+        if new_prices:
+            sample_symbol = list(new_prices.keys())[0]
+            logger.debug(f"Updated {len(new_prices)} prices from {exchange}. Sample: {sample_symbol} = {new_prices[sample_symbol]}")
         
         # Notify all subscribers with full price data
         for callback in self.subscribers:
@@ -71,8 +114,9 @@ class MarketDataManager:
     
     def get_price(self, symbol: str) -> Optional[float]:
         """Get current price for a symbol"""
-        if symbol in self.prices:
-            price_data = self.prices[symbol]
+        formatted_symbol = self._format_symbol(symbol)
+        if formatted_symbol in self.prices:
+            price_data = self.prices[formatted_symbol]
             if isinstance(price_data, dict) and 'price' in price_data:
                 return price_data['price']
             else:
@@ -83,200 +127,99 @@ class MarketDataManager:
         """Get all current prices"""
         return self.prices
     
-    def start_websocket(self, exchange: str):
-        """Start WebSocket connection for real-time data"""
-        if not WEBSOCKET_AVAILABLE:
-            logger.error("WebSocket client not available. Please install: pip install websocket-client")
-            return
-            
-        if exchange in self.ws_connections:
-            logger.info(f"WebSocket already running for {exchange}")
-            return
-        
-        # Initialize reconnect attempts counter
-        if exchange not in self.reconnect_attempts:
-            self.reconnect_attempts[exchange] = 0
-            
-        if exchange == 'binance':
-            self._start_binance_websocket()
-        elif exchange == 'kraken':
-            self._start_kraken_websocket()
-        else:
-            logger.error(f"Unsupported exchange for WebSocket: {exchange}")
-    
-    def _start_binance_websocket(self):
-        """Start Binance WebSocket connection"""
-        exchange = 'binance'
-        
-        def on_message(ws, message):
-            try:
-                data = json.loads(message)
-                price_updates = {}
-                
-                # Handle different message types
-                if 'stream' in data:
-                    # Stream format with multiple symbols
-                    stream_data = data['data']
-                    if 's' in stream_data and 'c' in stream_data:
-                        symbol = self._format_symbol(stream_data['s'])
-                        price = float(stream_data['c'])
-                        price_updates[symbol] = price
-                elif 'e' in data and data['e'] == '24hrTicker':
-                    # Individual ticker format
-                    symbol = self._format_symbol(data['s'])
-                    price = float(data['c'])
-                    price_updates[symbol] = price
-                elif isinstance(data, list):
-                    # Array format for multiple tickers
-                    for ticker in data:
-                        if 's' in ticker and 'c' in ticker:
-                            symbol = self._format_symbol(ticker['s'])
-                            price = float(ticker['c'])
-                            price_updates[symbol] = price
-                
-                if price_updates:
-                    self.update_prices(exchange, price_updates)
-                    logger.debug(f"Updated {len(price_updates)} prices from {exchange}")
-                    
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON decode error in WebSocket message: {e}")
-            except KeyError as e:
-                logger.error(f"Missing key in WebSocket data: {e}")
-            except Exception as e:
-                logger.error(f"Error processing WebSocket message: {e}")
-        
-        def on_error(ws, error):
-            logger.error(f"WebSocket error for {exchange}: {error}")
-            self.is_connected = False
-        
-        def on_close(ws, close_status_code, close_msg):
-            logger.info(f"WebSocket connection closed for {exchange}")
-            self.is_connected = False
-            
-            # Remove from active connections
-            if exchange in self.ws_connections:
-                del self.ws_connections[exchange]
-            
-            # Reconnect logic
-            if self._system_running and self.reconnect_attempts[exchange] < self.max_reconnect_attempts:
-                self.reconnect_attempts[exchange] += 1
-                reconnect_delay = min(5 * self.reconnect_attempts[exchange], 30)  # Exponential backoff max 30s
-                logger.info(f"Reconnecting to {exchange} in {reconnect_delay}s (attempt {self.reconnect_attempts[exchange]})")
-                threading.Timer(reconnect_delay, lambda: self.start_websocket(exchange)).start()
-            else:
-                logger.error(f"Max reconnection attempts reached for {exchange}")
-        
-        def on_open(ws):
-            logger.info(f"WebSocket connected to {exchange}")
-            self.is_connected = True
-            self.reconnect_attempts[exchange] = 0  # Reset reconnect attempts on successful connection
-        
-        try:
-            # Create streams for individual symbols (more reliable than !ticker@arr)
-            streams = [f"{symbol.lower()}@ticker" for symbol in self.supported_pairs]
-            stream_url = f"wss://stream.binance.com:9443/stream?streams={'/'.join(streams)}"
-            
-            logger.info(f"Connecting to Binance WebSocket with {len(streams)} streams")
-            
-            ws = websocket.WebSocketApp(
-                stream_url,
-                on_message=on_message,
-                on_error=on_error,
-                on_close=on_close,
-                on_open=on_open
-            )
-            
-            # Store the connection
-            self.ws_connections[exchange] = ws
-            
-            # Run in a separate thread
-            def run_websocket():
-                try:
-                    ws.run_forever()
-                except Exception as e:
-                    logger.error(f"WebSocket run_forever error for {exchange}: {e}")
-            
-            thread = threading.Thread(target=run_websocket, name=f"WS-{exchange}")
-            thread.daemon = True
-            thread.start()
-            
-            logger.info(f"Started WebSocket thread for {exchange}")
-            
-        except Exception as e:
-            logger.error(f"Failed to start WebSocket for {exchange}: {e}")
-            self.is_connected = False
-    
-    def _start_binance_individual_streams(self):
-        """Alternative method using individual WebSocket connections for each symbol"""
-        exchange = 'binance'
-        
-        def create_symbol_handler(symbol):
-            def on_message(ws, message):
-                try:
-                    data = json.loads(message)
-                    if 'c' in data:
-                        formatted_symbol = self._format_symbol(symbol)
-                        price = float(data['c'])
-                        self.update_prices(exchange, {formatted_symbol: price})
-                except Exception as e:
-                    logger.error(f"Error processing {symbol} WebSocket message: {e}")
-            
-            return on_message
-        
-        def on_error(ws, error):
-            logger.error(f"WebSocket error: {error}")
-        
-        def on_close(ws, close_status_code, close_msg):
-            logger.info(f"WebSocket connection closed")
-        
-        def on_open(ws):
-            logger.info(f"WebSocket connected")
-        
-        # Start individual WebSocket for each symbol
-        for symbol in self.supported_pairs[:5]:  # Limit to 5 for testing
-            try:
-                ws_url = f"wss://stream.binance.com:9443/ws/{symbol.lower()}@ticker"
-                ws = websocket.WebSocketApp(
-                    ws_url,
-                    on_message=create_symbol_handler(symbol),
-                    on_error=on_error,
-                    on_close=on_close,
-                    on_open=on_open
-                )
-                
-                thread = threading.Thread(target=ws.run_forever, name=f"WS-{symbol}")
-                thread.daemon = True
-                thread.start()
-                
-                self.ws_connections[f"{exchange}_{symbol}"] = ws
-                
-            except Exception as e:
-                logger.error(f"Failed to start WebSocket for {symbol}: {e}")
-    
-    def _start_kraken_websocket(self):
-        """Start Kraken WebSocket connection"""
-        logger.info("Kraken WebSocket not yet implemented")
-        # Kraken WebSocket implementation would go here
-    
     def _format_symbol(self, symbol: str) -> str:
-        """Format symbol from exchange format to internal format"""
-        # Convert BTCUSDT to BTC/USDT
-        if symbol.endswith('USDT'):
-            return symbol.replace('USDT', '/USDT')
-        elif symbol.endswith('BUSD'):
-            return symbol.replace('BUSD', '/BUSD')
-        elif symbol.endswith('ETH'):
-            return symbol.replace('ETH', '/ETH')
-        elif symbol.endswith('BTC'):
-            return symbol.replace('BTC', '/BTC')
-        else:
-            # Try to split by common patterns
-            for base in ['BTC', 'ETH', 'USDT', 'BNB', 'ADA', 'DOT', 'LINK', 'LTC', 'BCH', 'XRP']:
-                if symbol.endswith(base):
-                    quote = symbol[:-len(base)]
-                    return f"{quote}/{base}"
+        """Format symbol to standard format (BASE/QUOTE)"""
+        if '/' in symbol:
             return symbol
+        
+        # Handle Binance format (BTCUSDT -> BTC/USDT)
+        for base in self.supported_currencies:
+            if symbol.startswith(base):
+                quote = symbol[len(base):]
+                if quote in self.supported_currencies:
+                    return f"{base}/{quote}"
+        
+        return symbol
+
+    def _is_ws_connected(self, ws) -> bool:
+        """Check if the WebSocket connection is active and healthy"""
+        try:
+            if ws is None:
+                return False
+            
+            # Check if WebSocketApp has the sock attribute and it's connected
+            if hasattr(ws, 'sock') and ws.sock is not None:
+                # Different websocket-client versions have different attributes
+                sock = ws.sock
+                if hasattr(sock, 'connected') and sock.connected:
+                    return True
+                if hasattr(sock, '_connected') and sock._connected:
+                    return True
+            
+            # Alternative check for different versions
+            if hasattr(ws, 'keep_running') and ws.keep_running:
+                return True
+                
+            return False
+        except Exception as e:
+            logger.debug(f"WebSocket connection check error: {e}")
+            return False
     
+    def _build_binance_streams(self, pairs: List[str]) -> List[str]:
+        """Build Binance stream names from supported_pairs"""
+        streams = []
+        for p in pairs:
+            # normalize: accept "BTC/USDT" or "BTCUSDT"
+            if '/' in p:
+                base, quote = p.split('/')
+                symbol = f"{base}{quote}"
+            else:
+                symbol = p
+            streams.append(f"{symbol.lower()}@ticker")
+        return streams
+
+    def _monitor_websockets(self, interval: float = 5.0):
+        """Background monitor that checks health of websocket connections and attempts controlled reconnects"""
+        logger.info("WebSocket health monitor started")
+        while not self._health_thread_stop.is_set():
+            try:
+                with self.ws_lock:
+                    for key, ws in list(self.ws_connections.items()):
+                        # if connection is unhealthy, trigger reconnect flow for parent exchange
+                        if not self._is_ws_connected(ws):
+                            exchange = key.split('_')[0] if '_' in key else key
+                            logger.warning(f"Detected unhealthy WS for {key} (exchange={exchange})")
+                            # close and remove if present
+                            try:
+                                if ws is not None and hasattr(ws, 'close'):
+                                    ws.close()
+                            except Exception as e:
+                                logger.debug(f"Error closing unhealthy ws {key}: {e}")
+                            # remove safely
+                            if key in self.ws_connections:
+                                del self.ws_connections[key]
+                            # attempt reconnect for exchange if allowed
+                            attempts = self.reconnect_attempts.get(exchange, 0)
+                            if self._system_running and attempts < self.max_reconnect_attempts:
+                                self.reconnect_attempts[exchange] = attempts + 1
+                                delay = min(5 * self.reconnect_attempts[exchange], 30)
+                                logger.info(f"Scheduling reconnect for {exchange} in {delay}s (attempt {self.reconnect_attempts[exchange]})")
+                                threading.Timer(delay, lambda ex=exchange: self.start_websocket(ex)).start()
+                            else:
+                                logger.error(f"Max reconnection attempts reached for {exchange} or system stopped")
+                time.sleep(interval)
+            except Exception as e:
+                logger.error(f"Error in WebSocket health monitor: {e}")
+                time.sleep(interval)
+        logger.info("WebSocket health monitor stopped")
+
+    def _ensure_health_monitor(self):
+        """Ensure the health monitor thread is started/stopped with websockets"""
+        if self._health_thread is None or not self._health_thread.is_alive():
+            self._health_thread_stop.clear()
+            self._health_thread = threading.Thread(target=self._monitor_websockets, name="WS-Health-Monitor", daemon=True)
+            self._health_thread.start()
+
     def start_all_websockets(self):
         """Start WebSocket connections for all supported exchanges"""
         if not WEBSOCKET_AVAILABLE:
@@ -285,41 +228,158 @@ class MarketDataManager:
             
         logger.info("Starting all WebSocket connections")
         self._system_running = True
+        # reset reconnect attempts
         for exchange in self.exchanges.keys():
+            self.reconnect_attempts[exchange] = 0
             self.start_websocket(exchange)
-    
+
+        # start health monitor
+        self._ensure_health_monitor()
+
+    def start_websocket(self, exchange: str):
+        """Start WebSocket connection for real-time data"""
+        if not WEBSOCKET_AVAILABLE:
+            logger.error("WebSocket client not available. Please install: pip install websocket-client")
+            # Add sample data when WebSocket is not available
+            self.add_sample_prices()
+            return
+
+        # Avoid duplicate starts: check prefix presence
+        with self.ws_lock:
+            running_exchanges = {k.split('_')[0] for k in self.ws_connections.keys()}
+        if exchange in running_exchanges:
+            logger.info(f"WebSocket already running for {exchange}")
+            return
+
+        if exchange not in self.reconnect_attempts:
+            self.reconnect_attempts[exchange] = 0
+
+        if exchange == 'binance':
+            # use multi-stream URL built from normalized supported pairs
+            streams = self._build_binance_streams(self.supported_pairs)
+            stream_url = f"wss://stream.binance.com:9443/stream?streams={'/'.join(streams)}"
+            logger.info(f"Connecting to Binance WebSocket with {len(streams)} streams")
+            def on_message(ws, message):
+                try:
+                    data = json.loads(message)
+                    price_updates = {}
+                    # support multiple formats as before
+                    if 'stream' in data and 'data' in data:
+                        stream_data = data['data']
+                        symbol = self._format_symbol(stream_data.get('s', ''))
+                        price = float(stream_data.get('c', 0))
+                        price_updates[symbol] = price
+                    elif isinstance(data, dict) and 's' in data and 'c' in data:
+                        symbol = self._format_symbol(data['s'])
+                        price = float(data['c'])
+                        price_updates[symbol] = price
+                    elif isinstance(data, list):
+                        for ticker in data:
+                            if 's' in ticker and 'c' in ticker:
+                                symbol = self._format_symbol(ticker['s'])
+                                price_updates[symbol] = float(ticker['c'])
+                    if price_updates:
+                        self.update_prices('binance', price_updates)
+                except Exception as e:
+                    logger.debug(f"Error processing binance message: {e}")
+
+            def on_error(ws, error):
+                logger.error(f"WebSocket error for binance: {error}")
+                self.is_connected = False
+
+            def on_close(ws, close_status_code, close_msg):
+                logger.info(f"WebSocket connection closed for binance ({close_status_code}: {close_msg})")
+                self.is_connected = False
+                with self.ws_lock:
+                    if 'binance' in self.ws_connections:
+                        del self.ws_connections['binance']
+                # reconnect handled by monitor
+
+            def on_open(ws):
+                logger.info("WebSocket connected to binance")
+                self.is_connected = True
+                self.reconnect_attempts['binance'] = 0
+
+            try:
+                ws = websocket.WebSocketApp(
+                    stream_url,
+                    on_message=on_message,
+                    on_error=on_error,
+                    on_close=on_close,
+                    on_open=on_open
+                )
+                with self.ws_lock:
+                    self.ws_connections['binance'] = ws
+                thread = threading.Thread(target=ws.run_forever, name="WS-binance", daemon=True)
+                thread.start()
+                # ensure health monitor
+                self._ensure_health_monitor()
+            except Exception as e:
+                logger.error(f"Failed to start WebSocket for binance: {e}")
+                self.is_connected = False
+
+        elif exchange == 'kraken':
+            # Keep placeholder but start monitor too
+            logger.info("Kraken WS not implemented; skipping for now")
+            self._ensure_health_monitor()
+        else:
+            logger.error(f"Unsupported exchange for WebSocket: {exchange}")
+
     def stop_websocket(self, exchange: str = None):
         """Stop WebSocket connections"""
-        if exchange:
-            # Stop specific exchange
-            if exchange in self.ws_connections:
-                try:
-                    self.ws_connections[exchange].close()
-                    logger.info(f"WebSocket connection closed for {exchange}")
-                except Exception as e:
-                    logger.error(f"Error closing WebSocket for {exchange}: {e}")
-                finally:
-                    if exchange in self.ws_connections:
-                        del self.ws_connections[exchange]
-        else:
-            # Stop all exchanges
-            self._system_running = False
-            for exchange_name, ws in self.ws_connections.items():
-                try:
-                    ws.close()
-                    logger.info(f"WebSocket connection closed for {exchange_name}")
-                except Exception as e:
-                    logger.error(f"Error closing WebSocket for {exchange_name}: {e}")
-            
-            self.ws_connections = {}
-            self.is_connected = False
-            logger.info("All WebSocket connections stopped")
+        # stop health monitor
+        self._health_thread_stop.set()
+        try:
+            if self._health_thread and self._health_thread.is_alive():
+                self._health_thread.join(timeout=2)
+        except Exception:
+            pass
+
+        with self.ws_lock:
+            try:
+                if exchange:
+                    keys_to_close = [k for k in list(self.ws_connections.keys())
+                                     if k == exchange or k.startswith(f"{exchange}_")]
+                    for key in keys_to_close:
+                        ws = self.ws_connections.get(key)
+                        try:
+                            if ws is not None and hasattr(ws, 'close'):
+                                try:
+                                    ws.close()
+                                except Exception as inner:
+                                    logger.debug(f"Error while closing ws {key}: {inner}")
+                            logger.info(f"WebSocket connection closed for {key}")
+                        except Exception as e:
+                            logger.error(f"Error closing WebSocket for {key}: {e}")
+                        finally:
+                            if key in self.ws_connections:
+                                del self.ws_connections[key]
+                else:
+                    self._system_running = False
+                    for key, ws in list(self.ws_connections.items()):
+                        try:
+                            if ws is not None and hasattr(ws, 'close'):
+                                try:
+                                    ws.close()
+                                except Exception as inner:
+                                    logger.debug(f"Error while closing ws {key}: {inner}")
+                            logger.info(f"WebSocket connection closed for {key}")
+                        except Exception as e:
+                            logger.error(f"Error closing WebSocket for {key}: {e}")
+                    self.ws_connections = {}
+                    self.is_connected = False
+                    logger.info("All WebSocket connections stopped")
+            except Exception as e:
+                logger.error(f"Error stopping websocket(s): {e}")
     
     def get_connection_status(self) -> Dict[str, bool]:
         """Get connection status for all exchanges"""
         status = {}
-        for exchange in self.exchanges.keys():
-            status[exchange] = exchange in self.ws_connections
+        with self.ws_lock:
+            for exchange in self.exchanges.keys():
+                # consider any connection key that starts with exchange as connected
+                connected = any(k == exchange or k.startswith(f"{exchange}_") for k in self.ws_connections.keys())
+                status[exchange] = connected
         return status
     
     def get_price_statistics(self) -> Dict:
@@ -347,6 +407,7 @@ class MarketDataManager:
     def add_sample_prices(self):
         """Add sample prices for testing when WebSocket is not available"""
         sample_prices = {
+            # Base pairs for triangles
             'BTC/USDT': 45000.0,
             'ETH/USDT': 2700.0,
             'ETH/BTC': 0.06,
@@ -357,16 +418,32 @@ class MarketDataManager:
             'DOT/USDT': 6.5,
             'DOT/BTC': 0.000144,
             'LINK/USDT': 14.2,
-            'LINK/ETH': 0.0052
+            'LINK/BTC': 0.000315,
+            'LTC/USDT': 68.0,
+            'LTC/BTC': 0.001511,
+            'BCH/USDT': 240.0,
+            'BCH/BTC': 0.005333,
+            'XRP/USDT': 0.52,
+            'XRP/BTC': 0.0000115,
+            
+            # Additional pairs for more triangles
+            'BNB/ETH': 0.1185,
+            'ADA/ETH': 0.000203,
+            'DOT/ETH': 0.002407,
+            'LINK/ETH': 0.005259,
         }
         
         self.update_prices('sample', sample_prices)
         logger.info(f"Added {len(sample_prices)} sample prices for testing")
+        
+        # Log available triangles
+        symbols = list(sample_prices.keys())
+        logger.info(f"Sample symbols available: {len(symbols)}")
 
 # Global market data manager instance
 market_data_manager = MarketDataManager()
 
 # Initialize with sample data if no WebSocket available
 if not WEBSOCKET_AVAILABLE:
-    logger.info("WebSocket not available, initializing with sample data")
+    logger.info("WebSocket client not available or misconfigured, initializing with sample data")
     market_data_manager.add_sample_prices()
