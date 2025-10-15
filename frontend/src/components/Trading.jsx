@@ -1,4 +1,4 @@
-// src/components/Trading.js
+// frontend/src/components/Trading.jsx
 import React, { useState, useEffect } from 'react';
 import { arbitrageAPI } from '../utils/api';
 
@@ -26,7 +26,7 @@ const Trading = () => {
         
         try {
             // For demo purposes, use a sample triangle
-            const sampleTriangle = ['BTC/USDT', 'ETH/BTC', 'USDT/ETH'];
+            const sampleTriangle = ['BTC/USDT', 'ETH/BTC', 'ETH/USDT'];
             const amount = 100; // $100
             
             const result = await arbitrageAPI.executeTrade(sampleTriangle, amount);

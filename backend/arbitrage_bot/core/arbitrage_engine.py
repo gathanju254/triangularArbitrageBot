@@ -1,7 +1,7 @@
 # backend/arbitrage_bot/core/arbitrage_engine.py
-# backend/arbitrage_bot/core/arbitrage_engine.py
 import logging
 import numpy as np
+import re
 from typing import List, Dict, Optional, Tuple
 from ..models.arbitrage_opportunity import ArbitrageOpportunity
 from ..utils.helpers import calculate_profit_percentage
@@ -76,83 +76,125 @@ class ArbitrageEngine:
 
         return triangles
     
+    def _sanitize_pair(self, pair: str) -> str:
+        """Normalize and clean pair string (e.g. 'ETH/BTCv' -> 'ETH/BTC')."""
+        if not isinstance(pair, str):
+            return pair
+        p = pair.strip().upper()
+        # remove any character that is not alnum or '/'
+        p = re.sub(r'[^A-Z0-9/]', '', p)
+
+        # Normalize multiple slashes to single
+        if p.count('/') > 1:
+            parts = [part for part in p.split('/') if part]
+            p = '/'.join(parts)
+
+        # Ensure single slash and no accidental missing slash — best-effort split
+        if '/' not in p and len(p) >= 6:
+            for i in range(3, len(p) - 2):
+                candidate = f"{p[:i]}/{p[i:]}"
+                left, right = candidate.split('/')
+                if left and right:
+                    p = candidate
+                    break
+
+        return p
+
     def calculate_arbitrage(self, prices: Dict[str, float], triangle: List[str]) -> Optional[ArbitrageOpportunity]:
-        """Calculate arbitrage opportunity for a given triangle"""
+        """Calculate arbitrage opportunity for a given triangle.
+
+        Tries all rotations and starting-currency choices. Sanitizes pairs before use.
+        """
         try:
-            # Check if all required prices are available
-            missing_pairs = [pair for pair in triangle if pair not in prices]
+            # sanitize triangle pairs
+            sanitized = [self._sanitize_pair(p) for p in triangle]
+            # ensure prices keys are normalized (engine expects 'BASE/QUOTE' format)
+            # Check availability
+            missing_pairs = [pair for pair in sanitized if pair not in prices]
             if missing_pairs:
                 logger.debug(f"Missing prices for pairs: {missing_pairs}")
                 return None
-            
-            # Start with 1 unit of base currency
-            initial_amount = 1.0
-            current_amount = initial_amount
-            
-            # Track each step for debugging and display
-            steps = []
-            
-            # Get the base currency from the first pair
-            first_base, first_quote = triangle[0].split('/')
-            
-            # Execute triangular path with proper direction handling
-            for i, pair in enumerate(triangle):
-                base, quote = pair.split('/')
-                
-                if i == 0:
-                    # First trade: Convert base to quote
-                    # For A/B pair, price is how much B you get for 1 A
-                    current_amount = current_amount * prices[pair]
-                    steps.append(f"{initial_amount:.4f} {base} → {current_amount:.4f} {quote}")
-                    
-                elif i == 1:
-                    # Second trade: Need to check currency alignment
-                    prev_quote = triangle[i-1].split('/')[1]  # What we have from previous step
-                    current_base, current_quote = pair.split('/')
-                    
-                    if prev_quote == current_base:
-                        # Direct conversion: we have current_base, want current_quote
-                        current_amount = current_amount * prices[pair]
-                        steps.append(f"{(current_amount/prices[pair]):.4f} {current_base} → {current_amount:.4f} {current_quote}")
-                    else:
-                        # We have current_quote, want current_base (inverse trade)
-                        current_amount = current_amount / prices[pair]
-                        steps.append(f"{(current_amount*prices[pair]):.4f} {current_quote} → {current_amount:.4f} {current_base}")
-                        
-                elif i == 2:
-                    # Final trade: Convert back to original base currency
-                    current_base, current_quote = pair.split('/')
-                    
-                    if current_quote == first_base:
-                        # Direct conversion to original base
-                        current_amount = current_amount * prices[pair]
-                        steps.append(f"{(current_amount/prices[pair]):.4f} {current_base} → {current_amount:.4f} {current_quote}")
-                    else:
-                        # Inverse conversion to original base
-                        current_amount = current_amount / prices[pair]
-                        steps.append(f"{(current_amount*prices[pair]):.4f} {current_quote} → {current_amount:.4f} {current_base}")
-            
-            final_amount = current_amount
-            profit_percentage = calculate_profit_percentage(initial_amount, final_amount)
-            
-            if profit_percentage >= self.min_profit_threshold:
-                logger.debug(f"Arbitrage opportunity found: {profit_percentage:.4f}% for {triangle}")
-                logger.debug(f"Steps: {' → '.join(steps)}")
-                
+
+            best_result = None
+
+            # Try every rotation and both possible starting currencies for the first leg
+            for rot in range(len(sanitized)):
+                rotated = sanitized[rot:] + sanitized[:rot]
+                # extract possible start currencies from first pair
+                try:
+                    a, b = rotated[0].split('/')
+                except Exception:
+                    continue
+                start_options = [a, b]
+
+                for start_currency in start_options:
+                    initial_amount = 1.0
+                    current_amount = initial_amount
+                    current_currency = start_currency
+                    steps = []
+                    valid = True
+
+                    for pair in rotated:
+                        try:
+                            base, quote = pair.split('/')
+                        except ValueError:
+                            valid = False
+                            break
+
+                        if current_currency == base:
+                            # direct: base -> quote
+                            rate = float(prices[pair])
+                            prev_amount = current_amount
+                            current_amount = current_amount * rate
+                            steps.append(f"{prev_amount:.4f} {base} → {current_amount:.4f} {quote}")
+                            current_currency = quote
+                        elif current_currency == quote:
+                            # inverse: quote -> base
+                            rate = float(prices[pair])
+                            prev_amount = current_amount
+                            # guard division by zero
+                            if rate == 0:
+                                valid = False
+                                break
+                            current_amount = current_amount / rate
+                            steps.append(f"{prev_amount:.4f} {quote} → {current_amount:.4f} {base}")
+                            current_currency = base
+                        else:
+                            valid = False
+                            break
+
+                    if valid and current_currency == start_currency:
+                        final_amount = current_amount
+                        profit_percentage = calculate_profit_percentage(initial_amount, final_amount)
+                        if profit_percentage >= self.min_profit_threshold:
+                            # pick best opportunity by profit
+                            if not best_result or profit_percentage > best_result['profit_percentage']:
+                                best_result = {
+                                    'triangle': rotated,
+                                    'profit_percentage': profit_percentage,
+                                    'final_amount': final_amount,
+                                    'steps': steps,
+                                    'prices': {pair: prices[pair] for pair in rotated}
+                                }
+
+            if best_result:
+                logger.debug(f"Arbitrage opportunity found: {best_result['profit_percentage']:.4f}% for {best_result['triangle']}")
+                logger.debug(f"Steps: {' → '.join(best_result['steps'])}")
+
                 return ArbitrageOpportunity(
-                    triangle=triangle,
-                    profit_percentage=profit_percentage,
+                    triangle=best_result['triangle'],
+                    profit_percentage=best_result['profit_percentage'],
                     timestamp=np.datetime64('now'),
-                    prices={pair: prices[pair] for pair in triangle},
-                    steps=steps
+                    prices=best_result['prices'],
+                    steps=best_result['steps']
                 )
-            else:
-                logger.debug(f"Arbitrage below threshold: {profit_percentage:.4f}% for {triangle}")
-                
+
+            logger.debug(f"No profitable arbitrage for triangle {triangle}")
+            return None
+
         except Exception as e:
             logger.error(f"Error calculating arbitrage for {triangle}: {e}")
-            
-        return None
+            return None
     
     def scan_opportunities(self, prices: Dict[str, float]) -> List[ArbitrageOpportunity]:
         """Scan all triangles for arbitrage opportunities"""
@@ -204,56 +246,62 @@ class ArbitrageEngine:
         }
     
     def validate_triangle(self, triangle: List[str], prices: Dict[str, float]) -> Tuple[bool, str]:
-        """Validate if a triangle can be executed with current prices"""
+        """Validate if a triangle can be executed with current prices.
+
+        Tries rotations and starting currencies to determine if a valid cycle exists.
+        """
         try:
-            # Check if all pairs exist
-            missing_pairs = [pair for pair in triangle if pair not in prices]
-            if missing_pairs:
-                return False, f"Missing prices for: {missing_pairs}"
-            
-            # Check currency continuity
-            for i in range(len(triangle)):
-                current_pair = triangle[i]
-                next_pair = triangle[(i + 1) % len(triangle)]
-                
-                current_base, current_quote = current_pair.split('/')
-                next_base, next_quote = next_pair.split('/')
-                
-                # Check if currencies align properly
-                # The quote currency of current pair should be the base currency of next pair
-                # OR we should be able to do an inverse trade
-                if current_quote != next_base and current_quote != next_quote:
-                    return False, f"Currency mismatch between {current_pair} and {next_pair}"
-            
-            return True, "Triangle is valid"
-            
+            sanitized = [self._sanitize_pair(p) for p in triangle]
+
+            # Quick check: all pairs must be strings with a slash
+            for p in sanitized:
+                if not isinstance(p, str) or '/' not in p:
+                    return False, f"Invalid pair format: {p}"
+
+            # Ensure pairs exist in prices (if prices provided)
+            if prices:
+                missing = [p for p in sanitized if p not in prices]
+                if missing:
+                    return False, f"Missing prices for: {missing}"
+
+            # Try all rotations and start currencies
+            for rot in range(len(sanitized)):
+                rotated = sanitized[rot:] + sanitized[:rot]
+                try:
+                    first_base, first_quote = rotated[0].split('/')
+                except Exception:
+                    continue
+                start_options = [first_base, first_quote]
+
+                for start_currency in start_options:
+                    current_currency = start_currency
+                    valid = True
+
+                    for pair in rotated:
+                        try:
+                            base, quote = pair.split('/')
+                        except Exception:
+                            valid = False
+                            break
+
+                        if current_currency == base:
+                            current_currency = quote
+                        elif current_currency == quote:
+                            current_currency = base
+                        else:
+                            valid = False
+                            break
+
+                    if valid and current_currency == start_currency:
+                        return True, "Triangle is valid"
+
+            return False, "No valid execution ordering found for triangle"
+
         except Exception as e:
             return False, f"Validation error: {e}"
-    
-    def get_available_triangles(self) -> List[List[str]]:
-        """Get list of all available triangles"""
-        return self.triangles.copy()
-    
-    def clear_triangles(self):
-        """Clear cached triangles (force regeneration on next scan)"""
-        old_count = len(self.triangles)
-        self.triangles = []
-        logger.info(f"Cleared {old_count} cached triangles")
-    
-    def find_triangles_with_currency(self, currency: str) -> List[List[str]]:
-        """Find all triangles that involve a specific currency"""
-        if not self.triangles:
-            return []
-        
-        matching_triangles = []
-        for triangle in self.triangles:
-            # Check if the currency appears in any pair of the triangle
-            for pair in triangle:
-                if currency in pair:
-                    matching_triangles.append(triangle)
-                    break
-        
-        return matching_triangles
 
-# Global arbitrage engine instance
+# Create a module-level engine instance so other modules can import it
 arbitrage_engine = ArbitrageEngine()
+
+# Export symbols
+__all__ = ["ArbitrageEngine", "arbitrage_engine"]

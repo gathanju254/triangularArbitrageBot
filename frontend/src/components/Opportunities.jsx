@@ -1,6 +1,6 @@
-// frontend/src/components/Opportunities.js
 // frontend/src/components/Opportunities.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { arbitrageAPI } from '../utils/api'; // Import the API utility
 
 const Opportunities = () => {
     const [opportunities, setOpportunities] = useState([]);
@@ -10,31 +10,26 @@ const Opportunities = () => {
     const [minProfitFilter, setMinProfitFilter] = useState(0);
     const [lastUpdated, setLastUpdated] = useState(null);
 
-    // Memoized fetch function
+    // Memoized fetch function using the API utility
     const fetchOpportunities = useCallback(async () => {
         try {
             setError(null);
-            const response = await fetch('/api/opportunities/');
+            const data = await arbitrageAPI.getOpportunities();
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
             setOpportunities(data.opportunities || []);
             setLastUpdated(new Date());
             
             if (isLoading) setIsLoading(false);
         } catch (error) {
             console.error('Error fetching opportunities:', error);
-            setError('Failed to fetch opportunities');
+            setError(`Failed to fetch opportunities: ${error.message}`);
             if (isLoading) setIsLoading(false);
         }
     }, [isLoading]);
 
     useEffect(() => {
         fetchOpportunities();
-        const interval = setInterval(fetchOpportunities, 2000);
+        const interval = setInterval(fetchOpportunities, 5000); // Update every 5 seconds
         return () => clearInterval(interval);
     }, [fetchOpportunities]);
 
@@ -85,14 +80,18 @@ const Opportunities = () => {
     };
 
     const formatTimestamp = (timestamp) => {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffSecs = Math.floor(diffMs / 1000);
-        
-        if (diffSecs < 60) return `${diffSecs}s ago`;
-        if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
-        return date.toLocaleTimeString();
+        try {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            
+            if (diffSecs < 60) return `${diffSecs}s ago`;
+            if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
+            return date.toLocaleTimeString();
+        } catch (e) {
+            return 'Unknown';
+        }
     };
 
     const SortIcon = ({ columnKey }) => {
