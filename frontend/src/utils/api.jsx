@@ -96,7 +96,14 @@ export const arbitrageAPI = {
     executeTrade: (triangle, amount, exchange = 'binance') => 
         api.post('/trading/execute/', { triangle, amount, exchange }),
     getTradeHistory: () => api.get('/trading/history/'),
-    
+
+    // Risk metrics
+    getRiskMetrics: () => api.get('/risk/metrics/'),
+
+    // Real trading control
+    enableRealTrading: () => api.post('/trading/enable_real/'),
+    disableRealTrading: () => api.post('/trading/disable_real/'),
+
     // Settings (fixed endpoint)
     updateSettings: (settings) => api.post('/settings/update/', { settings }),
     getSettings: () => api.get('/settings/'),
@@ -106,6 +113,11 @@ export const arbitrageAPI = {
     
     // System management
     resetSystem: () => api.post('/reset_system/'),
+
+    // Trading monitor
+    startTradingMonitor: () => api.post('/trading/monitor/start/'),
+    stopTradingMonitor: () => api.post('/trading/monitor/stop/'),
+    getTradingMonitorStatus: () => api.get('/trading/monitor/status/'),
 };
 
 // Utility functions for API calls

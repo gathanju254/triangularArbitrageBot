@@ -27,6 +27,8 @@ class ArbitrageEngine:
                 logger.warning(f"Invalid symbol format: {symbol}")
                 continue
 
+        logger.debug(f"Available symbols for triangle detection: {valid_symbols}")
+        
         if not valid_symbols:
             logger.warning("No valid symbols found for triangle detection")
             return []
@@ -36,43 +38,72 @@ class ArbitrageEngine:
         for symbol in valid_symbols:
             try:
                 base, quote = symbol.split('/')
-                graph.setdefault(base, []).append((quote, symbol))
-                # ensure node exists for quote so traversal is safe
-                graph.setdefault(quote, [])
+                if base not in graph:
+                    graph[base] = []
+                graph[base].append((quote, symbol))
+                
+                # Also add reverse mapping for completeness
+                if quote not in graph:
+                    graph[quote] = []
             except ValueError:
                 continue
+
+        logger.debug(f"Graph structure: { {k: [q for q, _ in v] for k, v in graph.items()} }")
 
         triangles = []
         visited = set()
 
-        # Find all 3-currency cycles (currency1 -> currency2 -> currency3 -> currency1)
-        for currency1 in graph:
-            if currency1 not in self.supported_currencies:
+        # Find all 3-currency cycles using a more explicit approach
+        currencies = list(graph.keys())
+        
+        for i, curr1 in enumerate(currencies):
+            if curr1 not in self.supported_currencies:
                 continue
-
-            for currency2, pair1 in graph.get(currency1, []):
-                if currency2 not in graph:
+                
+            # First leg: curr1 -> curr2
+            for curr2, pair1 in graph.get(curr1, []):
+                if curr2 not in graph:
                     continue
-
-                for currency3, pair2 in graph.get(currency2, []):
-                    if currency3 == currency1:
+                    
+                # Second leg: curr2 -> curr3  
+                for curr3, pair2 in graph.get(curr2, []):
+                    if curr3 == curr1:  # Skip direct cycles
                         continue
-
-                    # third leg: currency3 -> currency1
-                    for dest, pair3 in graph.get(currency3, []):
-                        if dest == currency1:
+                        
+                    # Third leg: curr3 -> curr1
+                    for curr4, pair3 in graph.get(curr3, []):
+                        if curr4 == curr1:
                             triangle = [pair1, pair2, pair3]
-                            # canonical key to avoid duplicates regardless of ordering
                             triangle_key = tuple(sorted(triangle))
+                            
                             if triangle_key not in visited:
-                                triangles.append(triangle)
-                                visited.add(triangle_key)
+                                # Validate that this is a proper triangle
+                                try:
+                                    # Check if we can complete the cycle
+                                    path_currencies = []
+                                    for pair in triangle:
+                                        b, q = pair.split('/')
+                                        path_currencies.extend([b, q])
+                                    
+                                    # Should have exactly 3 unique currencies
+                                    unique_currencies = set(path_currencies)
+                                    if len(unique_currencies) == 3:
+                                        triangles.append(triangle)
+                                        visited.add(triangle_key)
+                                        logger.debug(f"Found valid triangle: {triangle}")
+                                except Exception as e:
+                                    logger.debug(f"Invalid triangle {triangle}: {e}")
 
         self.triangles = triangles
         logger.info(f"Found {len(triangles)} triangular paths from {len(valid_symbols)} symbols")
 
         if triangles:
             logger.info(f"Triangle examples: {triangles[:3]}")
+        else:
+            logger.warning("No triangles found! Available currencies in graph:")
+            for currency, connections in graph.items():
+                if connections:
+                    logger.warning(f"  {currency}: {[q for q, _ in connections]}")
 
         return triangles
     
@@ -299,6 +330,47 @@ class ArbitrageEngine:
 
         except Exception as e:
             return False, f"Validation error: {e}"
+
+    def get_available_triangles(self) -> List[List[str]]:
+        """Get list of all available triangles"""
+        return self.triangles.copy()
+    
+    def clear_triangles(self):
+        """Clear cached triangles (force regeneration on next scan)"""
+        old_count = len(self.triangles)
+        self.triangles = []
+        logger.info(f"Cleared {old_count} cached triangles")
+    
+    def find_triangles_with_currency(self, currency: str) -> List[List[str]]:
+        """Find all triangles that involve a specific currency"""
+        if not self.triangles:
+            return []
+        
+        matching_triangles = []
+        for triangle in self.triangles:
+            # Check if the currency appears in any pair of the triangle
+            for pair in triangle:
+                if currency in pair:
+                    matching_triangles.append(triangle)
+                    break
+        
+        return matching_triangles
+
+    def add_manual_triangle(self, triangle: List[str]):
+        """Manually add a triangle to the engine"""
+        if triangle not in self.triangles:
+            self.triangles.append(triangle)
+            logger.info(f"Manually added triangle: {triangle}")
+        else:
+            logger.debug(f"Triangle already exists: {triangle}")
+
+    def remove_triangle(self, triangle: List[str]):
+        """Remove a specific triangle from the engine"""
+        if triangle in self.triangles:
+            self.triangles.remove(triangle)
+            logger.info(f"Removed triangle: {triangle}")
+        else:
+            logger.warning(f"Triangle not found for removal: {triangle}")
 
 # Create a module-level engine instance so other modules can import it
 arbitrage_engine = ArbitrageEngine()
