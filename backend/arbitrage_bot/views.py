@@ -101,7 +101,9 @@ class TradingMonitorThread(threading.Thread):
             cfg, _ = BotConfig.objects.get_or_create(pk=1)
             # use DB config values (fall back to current values)
             self.profit_threshold = float(getattr(cfg, 'min_profit_threshold', self.profit_threshold))
-            self.trade_amount = float(getattr(cfg, 'base_balance', self.trade_amount)) * 0.01 if getattr(cfg, 'base_balance', None) else self.trade_amount
+            # Use trade_size_fraction from config, fallback to 0.01 (1%)
+            trade_size_fraction = float(getattr(cfg, 'trade_size_fraction', 0.01))
+            self.trade_amount = float(getattr(cfg, 'base_balance', self.trade_amount)) * trade_size_fraction if getattr(cfg, 'base_balance', None) else self.trade_amount
 
             # Update risk manager settings
             if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
@@ -772,6 +774,7 @@ def get_settings(request):
             'maxPositionSize': config.max_position_size,
             'maxDailyLoss': config.max_daily_loss,
             'baseBalance': config.base_balance,
+            'tradeSizeFraction': config.trade_size_fraction,  # NEW: Added trade size fraction
             'maxDrawdown': config.max_drawdown,
             'slippageTolerance': config.slippage_tolerance,
             'autoRestart': config.auto_restart,
@@ -828,6 +831,11 @@ def update_settings(request):
             if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
                 order_executor.risk_manager.max_drawdown = config.max_drawdown
             update_fields.append('max_drawdown')
+
+        # Trade size fraction - NEW
+        if 'tradeSizeFraction' in new_settings:
+            config.trade_size_fraction = float(new_settings['tradeSizeFraction'])
+            update_fields.append('trade_size_fraction')
 
         # Additional fields from Settings UI
         if 'slippageTolerance' in new_settings:

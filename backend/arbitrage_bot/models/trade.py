@@ -46,6 +46,9 @@ class BotConfig(models.Model):
     max_drawdown = models.FloatField(default=20.0)
     min_profit_threshold = models.FloatField(default=0.3)  # percent
     
+    # Trade size configuration
+    trade_size_fraction = models.FloatField(default=0.01)  # 1% of base balance
+    
     # New fields from Settings.jsx
     slippage_tolerance = models.FloatField(default=0.1)  # percent
     auto_restart = models.BooleanField(default=True)

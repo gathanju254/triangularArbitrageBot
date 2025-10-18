@@ -8,6 +8,7 @@ const Settings = () => {
         maxPositionSize: 1000,
         maxDailyLoss: 100,
         baseBalance: 1000,
+        tradeSizeFraction: 0.01, // NEW: Configurable trade size fraction
         enabledExchanges: ['binance'],
         tradingEnabled: false,
         maxDrawdown: 10,
@@ -35,6 +36,7 @@ const Settings = () => {
                     maxPositionSize: s.maxPositionSize ?? prev.maxPositionSize,
                     maxDailyLoss: s.maxDailyLoss ?? prev.maxDailyLoss,
                     baseBalance: s.baseBalance ?? prev.baseBalance,
+                    tradeSizeFraction: s.tradeSizeFraction ?? prev.tradeSizeFraction, // NEW
                     maxDrawdown: s.maxDrawdown ?? prev.maxDrawdown,
                     tradingEnabled: s.tradingEnabled ?? prev.tradingEnabled,
                     enabledExchanges: s.enabledExchanges ?? prev.enabledExchanges
@@ -56,6 +58,7 @@ const Settings = () => {
                 maxPositionSize: Number(settings.maxPositionSize),
                 maxDailyLoss: Number(settings.maxDailyLoss),
                 baseBalance: Number(settings.baseBalance),
+                tradeSizeFraction: Number(settings.tradeSizeFraction), // NEW
                 maxDrawdown: Number(settings.maxDrawdown),
                 // Optional toggles / arrays
                 enabledExchanges: settings.enabledExchanges,
@@ -101,6 +104,7 @@ const Settings = () => {
             maxPositionSize: 1000,
             maxDailyLoss: 100,
             baseBalance: 1000,
+            tradeSizeFraction: 0.01, // NEW
             enabledExchanges: ['binance'],
             tradingEnabled: false,
             maxDrawdown: 10,
@@ -141,6 +145,16 @@ const Settings = () => {
                     min: 100,
                     max: 100000,
                     description: 'Starting balance used for risk calculations'
+                },
+                // NEW: Trade size fraction field
+                {
+                    key: 'tradeSizeFraction',
+                    label: 'Trade Size Fraction (%)',
+                    type: 'number',
+                    step: 0.01,
+                    min: 0.01,
+                    max: 10,
+                    description: 'Percentage of base balance to use per trade (e.g., 1% = 0.01)'
                 }
             ]
         },
