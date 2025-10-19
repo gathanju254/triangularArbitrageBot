@@ -1,6 +1,6 @@
 # backend/arbitrage_bot/exchanges/binance.py
 import os
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from .base_exchange import BaseExchange
 import ccxt
 import logging
@@ -76,3 +76,58 @@ class BinanceClient(BaseExchange):
         except Exception as e:
             logger.error(f"Error fetching order: {e}")
             raise
+
+    def get_balance(self) -> Dict:
+        """Get account balance with enhanced logging"""
+        try:
+            if not self.is_authenticated:
+                logger.warning("Binance client not authenticated - cannot fetch balance")
+                return {}
+            
+            balance = self.exchange.fetch_balance()
+            free_balance = balance.get('free', {})
+            total_balance = balance.get('total', {})
+            
+            # Log important balances
+            important_currencies = ['USDT', 'BTC', 'ETH', 'BNB', 'USD']
+            balance_summary = {}
+            
+            for currency in important_currencies:
+                free = free_balance.get(currency, 0)
+                total = total_balance.get(currency, 0)
+                if free > 0 or total > 0:
+                    balance_summary[currency] = {
+                        'free': free,
+                        'total': total
+                    }
+                    logger.info(f"💰 Binance {currency} Balance: Free={free:.8f}, Total={total:.8f}")
+            
+            logger.info(f"📊 Binance balance summary: {len(balance_summary)} currencies with balance")
+            return balance_summary
+            
+        except Exception as e:
+            logger.error(f"❌ Error fetching Binance balance: {e}")
+            return {}
+
+    def check_sufficient_balance(self, currency: str, required_amount: float) -> Tuple[bool, float, str]:
+        """Check if sufficient balance exists for a trade"""
+        try:
+            balance = self.get_balance()
+            free_balance = 0
+            
+            # Convert required amount if needed
+            if currency.upper() != 'USDT':
+                # Would need conversion logic here
+                logger.warning(f"Balance check for non-USDT currency {currency} not fully implemented")
+                return True, 0, "Assuming sufficient balance for non-USDT"
+            
+            free_balance = balance.get('USDT', {}).get('free', 0)
+            
+            if free_balance >= required_amount:
+                return True, free_balance, f"Sufficient balance: ${free_balance:.2f} available"
+            else:
+                return False, free_balance, f"Insufficient balance: ${free_balance:.2f} available, ${required_amount:.2f} required"
+                
+        except Exception as e:
+            logger.error(f"Balance check error: {e}")
+            return False, 0, f"Balance check failed: {str(e)}"

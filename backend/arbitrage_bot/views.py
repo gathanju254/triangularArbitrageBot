@@ -794,57 +794,78 @@ def update_settings(request):
         new_settings = request.data.get('settings', {}) or {}
         config, _ = BotConfig.objects.get_or_create(pk=1)
 
-        # Collect fields that changed (for targeted DB update)
+        # Collect fields that changed
         update_fields = []
 
-        # Trading Configuration
-        if 'minProfitThreshold' in new_settings:
-            config.min_profit_threshold = float(new_settings['minProfitThreshold'])
-            # update engine runtime
-            try:
-                arbitrage_engine_instance.update_min_profit_threshold(config.min_profit_threshold)
-            except Exception:
-                logger.debug("arbitrage_engine_instance.update_min_profit_threshold not available")
-            update_fields.append('min_profit_threshold')
+        # Enhanced logging for settings update
+        logger.info(f"⚙️ Settings update requested: {new_settings}")
 
-        if 'baseBalance' in new_settings:
-            config.base_balance = float(new_settings['baseBalance'])
-            if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
-                order_executor.risk_manager.current_balance = config.base_balance
-                order_executor.risk_manager.peak_balance = max(order_executor.risk_manager.peak_balance, config.base_balance)
-            update_fields.append('base_balance')
+        # Trading Configuration with validation
+        if 'minProfitThreshold' in new_settings:
+            new_threshold = float(new_settings['minProfitThreshold'])
+            if new_threshold < 0.01:
+                return Response({'error': 'Minimum profit threshold must be at least 0.01%'}, status=400)
+            config.min_profit_threshold = new_threshold
+            arbitrage_engine_instance.update_min_profit_threshold(new_threshold)
+            update_fields.append('min_profit_threshold')
+            logger.info(f"📈 Min profit threshold updated to {new_threshold}%")
 
         if 'maxPositionSize' in new_settings:
-            config.max_position_size = float(new_settings['maxPositionSize'])
+            new_size = float(new_settings['maxPositionSize'])
+            if new_size < 2:  # Minimum $2 per trade
+                return Response({'error': 'Maximum position size must be at least $2'}, status=400)
+            config.max_position_size = new_size
             if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
-                order_executor.risk_manager.max_position_size = config.max_position_size
+                order_executor.risk_manager.max_position_size = new_size
             update_fields.append('max_position_size')
+            logger.info(f"💰 Max position size updated to ${new_size}")
 
+        if 'baseBalance' in new_settings:
+            new_balance = float(new_settings['baseBalance'])
+            config.base_balance = new_balance
+            if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
+                order_executor.risk_manager.current_balance = new_balance
+                order_executor.risk_manager.peak_balance = max(order_executor.risk_manager.peak_balance, new_balance)
+            update_fields.append('base_balance')
+            logger.info(f"💳 Base balance updated to ${new_balance}")
+
+        if 'tradeSizeFraction' in new_settings:
+            new_fraction = float(new_settings['tradeSizeFraction'])
+            if new_fraction <= 0 or new_fraction > 1:
+                return Response({'error': 'Trade size fraction must be between 0.01 and 1.00'}, status=400)
+            config.trade_size_fraction = new_fraction
+            update_fields.append('trade_size_fraction')
+            logger.info(f"📊 Trade size fraction updated to {new_fraction*100}%")
+
+        # Calculate and log actual trade size
+        actual_trade_size = config.base_balance * config.trade_size_fraction
+        logger.info(f"🎯 Calculated trade size: ${actual_trade_size:.2f} (${config.base_balance} * {config.trade_size_fraction*100}%)")
+
+        # Risk Management Settings
         if 'maxDailyLoss' in new_settings:
             config.max_daily_loss = float(new_settings['maxDailyLoss'])
             if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
                 order_executor.risk_manager.max_daily_loss = config.max_daily_loss
             update_fields.append('max_daily_loss')
+            logger.info(f"🛡️ Max daily loss updated to ${config.max_daily_loss}")
 
         if 'maxDrawdown' in new_settings:
             config.max_drawdown = float(new_settings['maxDrawdown'])
             if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
                 order_executor.risk_manager.max_drawdown = config.max_drawdown
             update_fields.append('max_drawdown')
+            logger.info(f"📉 Max drawdown updated to {config.max_drawdown}%")
 
-        # Trade size fraction - NEW
-        if 'tradeSizeFraction' in new_settings:
-            config.trade_size_fraction = float(new_settings['tradeSizeFraction'])
-            update_fields.append('trade_size_fraction')
-
-        # Additional fields from Settings UI
+        # Trading Configuration
         if 'slippageTolerance' in new_settings:
             config.slippage_tolerance = float(new_settings['slippageTolerance'])
             update_fields.append('slippage_tolerance')
+            logger.info(f"🎯 Slippage tolerance updated to {config.slippage_tolerance}%")
 
         if 'autoRestart' in new_settings:
             config.auto_restart = bool(new_settings['autoRestart'])
             update_fields.append('auto_restart')
+            logger.info(f"🔄 Auto restart updated to {config.auto_restart}")
 
         if 'tradingEnabled' in new_settings:
             config.trading_enabled = bool(new_settings['tradingEnabled'])
@@ -865,22 +886,26 @@ def update_settings(request):
             except Exception:
                 logger.debug("Could not update order_executor.real_trading_enabled")
             update_fields.append('trading_enabled')
+            logger.info(f"🔐 Trading enabled updated to {config.trading_enabled}")
 
         if 'enabledExchanges' in new_settings:
             # Validate shape (expect list)
             exchs = new_settings['enabledExchanges'] if isinstance(new_settings['enabledExchanges'], list) else list(new_settings['enabledExchanges'])
             config.enabled_exchanges = exchs
             update_fields.append('enabled_exchanges')
-            # Optionally wire exchange clients here (not forcing connections)
+            logger.info(f"🏦 Enabled exchanges updated to {exchs}")
 
         if update_fields:
             config.save(update_fields=update_fields)
 
-        logger.info(f"⚙️ Settings saved: {new_settings}")
+        # Verify settings were applied
+        logger.info(f"✅ Settings saved successfully: {len(update_fields)} fields updated")
+        logger.info(f"🔍 Final verification - Max Position: ${config.max_position_size}, Min Trade: ${getattr(order_executor, 'min_trade_amount', 'N/A')}")
 
         return Response({
             'message': 'Settings updated successfully',
             'settings': new_settings,
+            'calculated_trade_size': round(actual_trade_size, 2),
             'timestamp': time.time()
         })
 

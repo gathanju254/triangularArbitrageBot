@@ -43,16 +43,27 @@ class OrderExecutor:
         logger.info("🛑 Real trading disabled - Using simulation mode")
 
     def execute_triangle_trade(self, triangle: List[str], amount: float, exchange: str = 'binance') -> Dict:
-        """Execute triangular arbitrage trade (real or simulated)"""
-        trade_id = f"trade_{int(time.time())}"
+        """Execute triangular arbitrage trade with enhanced logging"""
+        trade_id = f"trade_{int(time.time())}_{exchange}"
 
         try:
-            # Validate inputs
+            # Enhanced input validation with better logging
+            logger.info(f"🔄 Trade execution started: ID={trade_id}, Exchange={exchange}, Amount=${amount:.2f}")
+            
             if amount < self.min_trade_amount:
-                raise Exception(f"Trade amount ${amount} below minimum ${self.min_trade_amount}")
+                error_msg = f"Trade amount ${amount:.2f} below minimum ${self.min_trade_amount:.2f}"
+                logger.error(f"❌ {error_msg}")
+                raise Exception(error_msg)
 
             if exchange not in self.exchanges:
-                raise Exception(f"Unsupported exchange: {exchange}")
+                error_msg = f"Unsupported exchange: {exchange}"
+                logger.error(f"❌ {error_msg}")
+                raise Exception(error_msg)
+
+            # Log exchange authentication status
+            exchange_client = self.exchanges[exchange]
+            auth_status = "Authenticated" if getattr(exchange_client, 'is_authenticated', False) else "Not Authenticated"
+            logger.info(f"🔐 Exchange {exchange} status: {auth_status}")
 
             # Lazy import to avoid circular imports
             from .market_data import market_data_manager  # type: ignore
@@ -66,28 +77,32 @@ class OrderExecutor:
                 else:
                     price_values[symbol] = price_data
 
-            # Calculate expected profit - FIXED: Ensure profit percentage is correctly calculated
+            logger.info(f"📊 Price data available for {len(price_values)} symbols")
+
+            # Calculate expected profit
             expected_profit, profit_percentage, steps = self._calculate_triangle_profit(
                 triangle, price_values, amount
             )
 
-            # DEBUG: Log the profit calculation (amount in USD, expected_profit in USD, profit_percentage in percent)
-            logger.info(f"[ProfitCalc] amount=${amount:.2f}, expected_profit=${expected_profit:.6f}, profit_percentage={profit_percentage:.6f}% | triangle={triangle}")
+            logger.info(f"💰 Profit calculation: Amount=${amount:.2f}, Expected=${expected_profit:.4f}, Percentage={profit_percentage:.4f}%")
 
-            # Check risk management (use enhanced real check)
+            # Enhanced risk management check
             risk_approved, risk_reason = self.risk_manager.can_execute_trade_real(
-                triangle, amount, expected_profit, profit_percentage
+                triangle, amount, expected_profit, profit_percentage, exchange
             )
 
             if not risk_approved:
-                logger.warning(f"Trade rejected by risk manager: {risk_reason}")
+                logger.error(f"🚫 Trade rejected by risk manager: {risk_reason}")
                 raise Exception(f"Trade rejected by risk manager: {risk_reason}")
 
+            logger.info(f"✅ Risk management approved trade")
+
             # Execute trade (real or simulated)
-            exchange_client = self.exchanges[exchange]
             if self.real_trading_enabled and getattr(exchange_client, 'is_authenticated', False):
+                logger.info(f"🔴 EXECUTING REAL TRADE on {exchange}")
                 trade_result = self._execute_real_trade(triangle, amount, exchange, trade_id)
             else:
+                logger.info(f"🟢 EXECUTING SIMULATED TRADE on {exchange}")
                 trade_result = self._execute_simulated_trade(
                     triangle, amount, exchange, trade_id, expected_profit, profit_percentage, steps
                 )
@@ -107,11 +122,13 @@ class OrderExecutor:
                 'timestamp': time.time()
             }
 
-            logger.info(f"Trade executed: {trade_id}, Profit: ${trade_result.get('profit', 0.0):.4f}")
+            profit = trade_result.get('profit', 0.0)
+            logger.info(f"🎉 Trade completed: {trade_id}, Profit: ${profit:.4f}, Real Trade: {trade_result.get('real_trade', False)}")
+            
             return trade_result
 
         except Exception as e:
-            logger.error(f"Trade execution failed: {e}")
+            logger.error(f"💥 Trade execution failed: {trade_id}, Error: {str(e)}")
             return {
                 'trade_id': trade_id,
                 'status': 'failed',
@@ -189,10 +206,12 @@ class OrderExecutor:
             current_amount = amount
             current_currency = 'USDT'  # default start
 
-            for pair in triangle:
+            for i, pair in enumerate(triangle):
                 if '/' not in pair:
                     raise Exception(f"Invalid pair format: {pair}")
                 base, quote = pair.split('/')
+
+                logger.info(f"📦 Step {i+1}/{len(triangle)}: {pair}, Current: {current_amount:.4f} {current_currency}")
 
                 if current_currency == base:
                     # Place buy order: spend `current_amount` base to receive quote
@@ -228,11 +247,15 @@ class OrderExecutor:
                 else:
                     raise Exception(f"Cannot execute {pair} from {current_currency}")
 
+                logger.info(f"✅ Step {i+1} completed: New amount: {current_amount:.4f} {current_currency}")
+
                 # small safety delay
                 time.sleep(0.5)
 
             actual_profit = current_amount - amount
             profit_percentage = (actual_profit / amount) * 100 if amount else 0.0
+
+            logger.info(f"🎯 Real trade completed: Initial=${amount:.2f}, Final=${current_amount:.2f}, Profit=${actual_profit:.4f}")
 
             return {
                 'trade_id': trade_id,
@@ -245,11 +268,12 @@ class OrderExecutor:
                 'timestamp': time.time(),
                 'real_trade': True,
                 'orders': executed_orders,
-                'final_amount': current_amount
+                'final_amount': current_amount,
+                'steps': [f"Real execution on {exchange}"]
             }
 
         except Exception as e:
-            logger.error(f"Real trade execution failed: {e}")
+            logger.error(f"💥 Real trade execution failed: {e}")
             # Attempt safe cancellation / cleanup
             try:
                 self._cancel_open_orders(exchange, triangle)

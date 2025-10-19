@@ -28,11 +28,52 @@ const Dashboard = () => {
         minProfitThreshold: 0.2,
         maxPositionSize: 1000,
         baseBalance: 1000,
-        tradeSizeFraction: 0.01, // NEW
+        tradeSizeFraction: 0.01,
         maxDailyLoss: 100,
         enabledExchanges: ['binance'],
         tradingEnabled: false
     });
+
+    // Settings validation function
+    const validateSettings = (settings) => {
+        const errors = [];
+        
+        if (settings.maxPositionSize < 2) {
+            errors.push('Maximum position size must be at least $2');
+        }
+        
+        if (settings.tradeSizeFraction <= 0 || settings.tradeSizeFraction > 1) {
+            errors.push('Trade size fraction must be between 0.01 and 1.00 (1% to 100%)');
+        }
+        
+        const calculatedTradeSize = settings.baseBalance * settings.tradeSizeFraction;
+        if (calculatedTradeSize > settings.maxPositionSize) {
+            errors.push(`Calculated trade size ($${calculatedTradeSize.toFixed(2)}) exceeds maximum position size ($${settings.maxPositionSize})`);
+        }
+        
+        if (calculatedTradeSize < 2) {
+            errors.push(`Calculated trade size ($${calculatedTradeSize.toFixed(2)}) is below minimum trade amount ($2)`);
+        }
+        
+        return errors;
+    };
+
+    // Enhanced trade amount calculation
+    const computeTradeAmount = () => {
+        const base = Number(settings.baseBalance || 1000);
+        const fraction = Number(settings.tradeSizeFraction || 0.01);
+        const maxPosition = Number(settings.maxPositionSize || 100);
+        
+        let amount = base * fraction;
+        
+        // Ensure amount is within limits
+        amount = Math.max(2, Math.min(amount, maxPosition)); // At least $2, at most maxPosition
+        amount = Math.round(amount * 100) / 100; // Round to 2 decimal places
+        
+        console.log(`Trade amount calculation: $${base} * ${fraction*100}% = $${amount} (max: $${maxPosition})`);
+        
+        return amount;
+    };
 
     // Memoized fetch functions
     const fetchSystemStatus = useCallback(async () => {
@@ -79,7 +120,7 @@ const Dashboard = () => {
                 minProfitThreshold: s.minProfitThreshold ?? prev.minProfitThreshold,
                 maxPositionSize: s.maxPositionSize ?? prev.maxPositionSize,
                 baseBalance: s.baseBalance ?? prev.baseBalance,
-                tradeSizeFraction: s.tradeSizeFraction ?? prev.tradeSizeFraction, // NEW
+                tradeSizeFraction: s.tradeSizeFraction ?? prev.tradeSizeFraction,
                 maxDailyLoss: s.maxDailyLoss ?? prev.maxDailyLoss,
                 enabledExchanges: s.enabledExchanges ?? prev.enabledExchanges,
                 tradingEnabled: s.tradingEnabled ?? prev.tradingEnabled
@@ -107,6 +148,13 @@ const Dashboard = () => {
     const startTradingMonitor = async () => {
         if (tradingMode === 'neutral') {
             setError('⚠️ Please select a trading mode first');
+            return;
+        }
+
+        // Validate settings before starting
+        const validationErrors = validateSettings(settings);
+        if (validationErrors.length > 0) {
+            setError(`❌ Settings validation failed: ${validationErrors.join(', ')}`);
             return;
         }
 
@@ -178,14 +226,6 @@ const Dashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    // Helper: compute trade amount from BotConfig.base_balance and tradeSizeFraction
-    const computeTradeAmount = () => {
-        const base = Number(settings.baseBalance || 1000);
-        const fraction = Number(settings.tradeSizeFraction || 0.01);
-        const amount = Math.max(10, Math.round(base * fraction * 100) / 100); // at least $10
-        return amount;
     };
 
     // Execute Demo Trade
