@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from .models import User
 from .models import APIKey
-from apps.exchanges.services import ExchangeService
+# from apps.exchanges.services import ExchangeService
 
 # Get logger instance
 logger = logging.getLogger(__name__)

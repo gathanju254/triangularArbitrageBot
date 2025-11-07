@@ -1,4 +1,6 @@
 # backend/requirements/development.txt
 -r base.txt
-django-debug-toolbar==4.4.5
-ipdb==0.13.13
+django-debug-toolbar>=4.2,<4.3
+ipdb>=0.13,<0.14
+black>=23.0,<24.0
+flake8>=6.0,<7.0

@@ -4,7 +4,8 @@ from typing import Dict, Any, Tuple
 from django.utils import timezone
 from django.core.cache import cache
 from ..models import APIKey, User
-from utils.security import health_check
+# FIXED: Import from the correct location within the users app
+from ..utils.security import health_check
 
 logger = logging.getLogger(__name__)
 

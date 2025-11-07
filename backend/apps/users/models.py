@@ -3,7 +3,12 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from utils.security import encrypt_data, decrypt_data, safe_encrypt_data, safe_decrypt_data
+from apps.users.utils.security import (
+    encrypt_data,
+    decrypt_data,
+    safe_encrypt_data,
+    safe_decrypt_data,
+)
 import logging
 
 logger = logging.getLogger(__name__)

@@ -8,6 +8,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# --- SAFE LOGGER WRAPPER: strip non-ASCII to avoid Windows console encoding errors ---
+class _SafeLogger:
+    def __init__(self, inner):
+        self._inner = inner
+
+    def __getattr__(self, name):
+        attr = getattr(self._inner, name)
+        if callable(attr) and name in ('debug', 'info', 'warning', 'error', 'critical', 'exception'):
+            def wrapped(msg, *args, **kwargs):
+                try:
+                    if isinstance(msg, str):
+                        # remove non-ASCII characters (emojis) which cause cp1252 encode errors on Windows consoles
+                        msg = ''.join(ch for ch in msg if ord(ch) < 128)
+                except Exception:
+                    pass
+                return attr(msg, *args, **kwargs)
+            return wrapped
+        return attr
+
+logger = _SafeLogger(logger)
+
 class BinanceClient(BaseExchange):
     def __init__(self):
         api_key = os.getenv('BINANCE_API_KEY', '')

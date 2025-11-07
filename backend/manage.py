@@ -6,7 +6,14 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'triangularArbitrageBot.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
+    
+    # Add the parent directory to Python path
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    parent_path = os.path.dirname(current_path)
+    if parent_path not in sys.path:
+        sys.path.append(parent_path)
+    
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

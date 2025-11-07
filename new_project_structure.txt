@@ -134,6 +134,7 @@ triangularArbitrageBot/
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── settings/
+|   |   |   ├── __init__.py
 |   |   |   ├── base.py
 |   |   |   ├── development.py
 |   |   |   └── production.py
