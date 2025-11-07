@@ -1,0 +1,16 @@
+# backend/requirements/production.txt
+# Production Dependencies
+# Includes Base + Deployment Essentials
+-r base.txt
+
+# Database & ORM
+psycopg2-binary==2.9.7
+dj-database-url==2.1.0
+
+# Web Server & Static File Handling
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Security & Env Config
+cryptography==41.0.7
+python-dotenv==1.0.0

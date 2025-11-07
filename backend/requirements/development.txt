@@ -1,0 +1,4 @@
+# backend/requirements/development.txt
+-r base.txt
+django-debug-toolbar==4.4.5
+ipdb==0.13.13
