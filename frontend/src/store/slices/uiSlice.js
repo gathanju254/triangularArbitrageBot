@@ -1,0 +1,1 @@
+// frontend/src/store/slices/uiSlice.js

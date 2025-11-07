@@ -1,0 +1,1 @@
+//frontend/src/services/storage/sessionStorage.js

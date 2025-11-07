@@ -10,6 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,6 +33,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+BINANCE_TESTNET = False  # Set to True for testing without real funds
+BINANCE_TLD = 'com'  # 'com' for international, 'us' for Binance.US
+
+# Increase timeout settings
+REQUEST_TIMEOUT = 30
+WEBSOCKET_RECONNECT_DELAY = 10
 
 # Application definition
 

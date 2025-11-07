@@ -1,0 +1,236 @@
+/* frontend/src/pages/Dashboard/Dashboard.css */
+/* =========================================
+   DASHBOARD PAGE (Merged + Optimized)
+   ========================================= */
+
+/* Layout */
+.dashboard-page {
+  padding: 0;
+}
+
+.dashboard-header {
+  margin-bottom: 24px;
+}
+
+.dashboard-subtitle {
+  color: #666;
+  font-size: 16px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* Refresh indicator spin next to subtitle */
+.dashboard-subtitle .ant-spin {
+  margin-left: 8px;
+}
+
+/* ============================================================
+   Loading State (used before dashboard renders or during refresh)
+   ============================================================ */
+.dashboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Additional spinner style (Card loading icon) */
+.ant-card-extra .loading-spinner {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ============================================================
+   Stats Cards (shared with StatsCards component)
+   ============================================================ */
+.stats-grid {
+  margin-bottom: 0;
+}
+
+.stat-card {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card .ant-card-body {
+  padding: 20px;
+}
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.trend-up {
+  color: #52c41a;
+}
+
+.trend-down {
+  color: #ff4d4f;
+}
+
+.stat-icon {
+  font-size: 48px;
+  opacity: 0.8;
+  margin-left: 16px;
+}
+
+/* ============================================================
+   Status Indicators (Real-time updates)
+   ============================================================ */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #52c41a;
+}
+
+.status-indicator.pulse::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52c41a;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* ============================================================
+   Status Card (connection, feed, update timestamp)
+   ============================================================ */
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.status-item:last-child {
+  border-bottom: none;
+}
+
+.status-label {
+  color: #666;
+  font-size: 14px;
+}
+
+.status-value {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.status-value.connected {
+  color: #52c41a;
+}
+
+.status-value.disconnected {
+  color: #ff4d4f;
+}
+
+/* ============================================================
+   Recent Activity Card
+   ============================================================ */
+.activity-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-type {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.activity-time {
+  color: #666;
+  font-size: 12px;
+}
+
+/* ============================================================
+   Quick Actions Card
+   ============================================================ */
+.quick-actions-card .ant-card-actions > li {
+  margin: 8px 0;
+}
+
+.quick-actions-card .ant-card-actions > li > span {
+  cursor: pointer;
+  color: #1890ff;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.quick-actions-card .ant-card-actions > li > span:hover {
+  color: #40a9ff;
+}
+
+/* ============================================================
+   Responsive Design
+   ============================================================ */
+@media (max-width: 768px) {
+  .dashboard-header {
+    text-align: center;
+  }
+
+  .stat-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stat-icon {
+    margin-left: 0;
+    margin-top: 12px;
+    font-size: 36px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+}

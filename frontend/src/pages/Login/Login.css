@@ -1,0 +1,118 @@
+/* frontend/src/pages/Login/Login.css */
+/* =========================================
+   LOGIN PAGE — Combined + Optimized
+   ========================================= */
+
+/* Main layout wrapper */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Login Card */
+.login-card {
+  width: 100%;
+  max-width: 400px;          /* keeps from first version */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* stronger shadow */
+  border-radius: 12px;
+  border: none;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* Header section */
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 20px 0 0 0;
+}
+
+/* Logo icon */
+.login-logo {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+  display: block;
+}
+
+/* Title / subtitle */
+.login-title {
+  color: #1890ff !important;
+  margin-bottom: 8px !important;
+  font-weight: 700;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* Form */
+.login-form {
+  margin-top: 8px;
+}
+
+/* Login button */
+.login-button {
+  height: 48px;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1890ff, #096dd9);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+}
+
+/* Footer */
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+/* =========================================
+   Responsive (Mobile)
+   ========================================= */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+
+  .login-card {
+    max-width: 100%;
+  }
+
+  .login-logo {
+    font-size: 36px;
+  }
+
+  .login-title {
+    font-size: 24px !important;
+  }
+}
+
+/* =========================================
+   Dark mode support
+   ========================================= */
+@media (prefers-color-scheme: dark) {
+  .login-card {
+    background: #1f1f1f;
+  }
+
+  .login-footer {
+    background: #141414;
+    border-color: #303030;
+  }
+}

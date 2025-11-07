@@ -1,0 +1,148 @@
+/* frontend/src/components/dashboard/ProfitChart/ProfitChart.css */
+.profit-chart {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+}
+
+.profit-chart-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #d9d9d9;
+}
+
+.custom-tooltip {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.custom-tooltip .label {
+  margin: 0 0 8px 0;
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.custom-tooltip .profit {
+  margin: 0;
+  color: #1890ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .profit-chart {
+    padding: 16px;
+  }
+  
+  .profit-chart-empty {
+    height: 250px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .profit-chart {
+    background: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .profit-chart-empty {
+    background: #141414;
+    border-color: #303030;
+  }
+  
+  .custom-tooltip {
+    background: #1f1f1f;
+    border-color: #303030;
+    color: #fff;
+  }
+  
+  .custom-tooltip .label {
+    color: #bfbfbf;
+  }
+}
+
+/* Additional styles for enhanced ProfitChart */
+.profit-chart-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.chart-timeframe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-stats {
+  font-size: 12px;
+}
+
+.profit-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-item .ant-typography {
+  margin-bottom: 4px;
+}
+
+.tooltip-item {
+  margin: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .profit-stats-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .chart-stats {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .profit-stats-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

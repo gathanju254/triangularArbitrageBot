@@ -1,0 +1,679 @@
+/* frontend/src/pages/Profile/Profile.css */
+.profile-page {
+  padding: 24px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 64px);
+}
+
+.profile-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.profile-header .ant-typography {
+  margin-bottom: 8px;
+}
+
+/* Profile Tabs */
+.profile-tabs {
+  background: transparent;
+}
+
+.profile-tabs .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+.profile-tabs .ant-tabs-tab {
+  padding: 12px 24px;
+  font-weight: 500;
+}
+
+.profile-tabs .ant-tabs-tab-active {
+  background: #fff;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Profile Card Styles */
+.profile-card,
+.status-card,
+.stats-card,
+.details-card,
+.activity-card,
+.edit-profile-card,
+.security-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.profile-card:hover,
+.status-card:hover,
+.stats-card:hover,
+.details-card:hover,
+.activity-card:hover,
+.edit-profile-card:hover,
+.security-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Profile Avatar Section */
+.profile-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.profile-avatar {
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #1890ff, #36cfc9);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.profile-info {
+  text-align: center;
+}
+
+.profile-info .ant-typography {
+  margin-bottom: 4px;
+}
+
+.member-since {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Profile Actions */
+.profile-actions {
+  margin-top: 16px;
+}
+
+.profile-actions .ant-btn {
+  border-radius: 8px;
+  height: 40px;
+  font-weight: 500;
+}
+
+/* Status Card */
+.status-card .status-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.status-card .status-item:not(:last-child) {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 16px;
+}
+
+.status-icon {
+  font-size: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.status-icon.verified {
+  color: #52c41a;
+}
+
+.status-icon.pending {
+  color: #faad14;
+}
+
+/* Stats Card */
+.stats-card {
+  margin-bottom: 24px;
+}
+
+.stats-card .ant-statistic {
+  text-align: center;
+  padding: 8px;
+}
+
+.stats-card .ant-statistic-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.stats-card .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* Details Card */
+.details-card {
+  margin-bottom: 24px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item .ant-typography strong {
+  color: #262626;
+}
+
+.detail-item .ant-tag {
+  margin: 0;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Activity Card */
+.activity-card ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.activity-card li {
+  margin-bottom: 8px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Edit Profile Section */
+.edit-profile-card,
+.security-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.edit-profile-header,
+.security-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.edit-profile-header .ant-typography,
+.security-header .ant-typography {
+  margin-bottom: 8px;
+}
+
+/* Forms */
+.profile-form,
+.security-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.form-row .ant-form-item {
+  flex: 1;
+  margin-bottom: 16px;
+}
+
+.profile-form .ant-form-item,
+.security-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.profile-form .ant-form-item-label > label,
+.security-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
+
+.profile-form .ant-input,
+.security-form .ant-input,
+.profile-form .ant-input-password,
+.security-form .ant-input-password,
+.profile-form .ant-select-selector {
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  padding: 8px 12px;
+  height: 40px;
+}
+
+.profile-form .ant-input:focus,
+.security-form .ant-input:focus,
+.profile-form .ant-input-password:focus,
+.security-form .ant-input-password:focus,
+.profile-form .ant-select-focused .ant-select-selector {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.profile-form .ant-input-prefix,
+.security-form .ant-input-prefix {
+  color: #8c8c8c;
+  margin-right: 8px;
+}
+
+/* Form Actions */
+.form-actions {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.form-actions .ant-space {
+  justify-content: center;
+}
+
+.form-actions .ant-btn {
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 500;
+}
+
+.form-actions .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff, #36cfc9);
+  border: none;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.3);
+}
+
+.form-actions .ant-btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Security Tips */
+.security-tips {
+  margin-top: 24px;
+}
+
+.security-tips .ant-typography {
+  margin-bottom: 16px;
+  color: #262626;
+}
+
+.security-tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.security-tips li {
+  margin-bottom: 8px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* ==================== */
+/* MOBILE RESPONSIVE FIXES */
+/* ==================== */
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 16px;
+  }
+
+  .profile-header {
+    margin-bottom: 24px;
+    text-align: left;
+  }
+
+  .profile-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  /* Fix Overview Tab Layout for Mobile */
+  .profile-tabs .ant-tabs-content-holder {
+    padding: 0;
+  }
+
+  .profile-tabs .ant-row {
+    margin: 0 !important;
+  }
+
+  .profile-tabs .ant-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-bottom: 16px;
+  }
+
+  .profile-tabs .ant-col:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Fix Form Layout */
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-row .ant-form-item {
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Fix Stats Grid */
+  .stats-card .ant-col {
+    width: 50% !important;
+    flex: 0 0 50% !important;
+    margin-bottom: 16px;
+  }
+
+  .stats-card .ant-col:nth-child(odd) {
+    padding-right: 8px;
+  }
+
+  .stats-card .ant-col:nth-child(even) {
+    padding-left: 8px;
+  }
+
+  .stats-card .ant-col:nth-last-child(-n+2) {
+    margin-bottom: 0;
+  }
+
+  /* Fix Detail Items */
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px 0;
+  }
+
+  .detail-item .ant-typography,
+  .detail-item .ant-tag {
+    width: 100%;
+    text-align: left;
+  }
+
+  /* Fix Profile Avatar Section */
+  .profile-avatar-section {
+    padding: 16px 0;
+    flex-direction: row;
+    text-align: left;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .profile-info {
+    text-align: left;
+    flex: 1;
+  }
+
+  .member-since {
+    justify-content: flex-start;
+  }
+
+  /* Fix Status Items */
+  .status-card .status-item {
+    padding: 12px 0;
+  }
+
+  /* Fix Edit and Security Cards */
+  .edit-profile-card,
+  .security-card {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .edit-profile-header,
+  .security-header {
+    text-align: left;
+    padding: 0 0 16px 0;
+  }
+
+  /* Fix Form Actions */
+  .form-actions {
+    text-align: left;
+  }
+
+  .form-actions .ant-space {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .form-actions .ant-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+  .profile-page {
+    padding: 12px 8px;
+  }
+
+  .profile-header .ant-typography {
+    font-size: 20px !important;
+  }
+
+  .profile-tabs .ant-tabs-nav-wrap {
+    padding: 0 4px;
+  }
+
+  .profile-tabs .ant-tabs-tab {
+    padding: 6px 12px;
+    font-size: 13px;
+    margin: 0 2px;
+  }
+
+  /* Single Column Stats on Very Small Screens */
+  .stats-card .ant-col {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 0 !important;
+    margin-bottom: 16px;
+  }
+
+  .stats-card .ant-col:last-child {
+    margin-bottom: 0;
+  }
+
+  .stats-card .ant-statistic-content {
+    font-size: 20px;
+  }
+
+  /* Compact Profile Avatar */
+  .profile-avatar-section {
+    gap: 12px;
+  }
+
+  .profile-avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .profile-info .ant-typography {
+    font-size: 16px !important;
+    margin-bottom: 2px;
+  }
+
+  .profile-info .ant-typography-secondary {
+    font-size: 12px;
+  }
+
+  .member-since {
+    font-size: 11px;
+  }
+
+  /* Compact Forms */
+  .profile-form .ant-form-item,
+  .security-form .ant-form-item {
+    margin-bottom: 16px;
+  }
+
+  .profile-form .ant-input,
+  .security-form .ant-input,
+  .profile-form .ant-input-password,
+  .security-form .ant-input-password {
+    height: 36px;
+    font-size: 14px;
+  }
+
+  /* Stack Form Actions */
+  .form-actions .ant-space {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .form-actions .ant-btn {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+/* Tablet Adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .profile-page {
+    padding: 20px;
+  }
+
+  .profile-tabs .ant-col-8 {
+    width: 35%;
+    flex: 0 0 35%;
+  }
+
+  .profile-tabs .ant-col-16 {
+    width: 65%;
+    flex: 0 0 65%;
+  }
+
+  .stats-card .ant-col {
+    width: 50%;
+    flex: 0 0 50%;
+    margin-bottom: 16px;
+  }
+
+  .stats-card .ant-col:nth-last-child(-n+2) {
+    margin-bottom: 0;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .profile-page {
+    background: #141414;
+  }
+
+  .profile-card,
+  .status-card,
+  .stats-card,
+  .details-card,
+  .activity-card,
+  .edit-profile-card,
+  .security-card {
+    background: #1f1f1f;
+    border-color: #303030;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .detail-item .ant-typography strong {
+    color: #f0f0f0;
+  }
+
+  .activity-card li,
+  .security-tips li {
+    color: #bfbfbf;
+  }
+
+  .member-since {
+    color: #8c8c8c;
+  }
+
+  @media (max-width: 768px) {
+    .edit-profile-card,
+    .security-card {
+      background: #1f1f1f;
+      border-color: #303030;
+    }
+  }
+}
+
+/* Animation Enhancements */
+.profile-avatar {
+  transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+}
+
+/* Focus States for Accessibility */
+.profile-form .ant-input:focus-visible,
+.security-form .ant-input:focus-visible,
+.profile-form .ant-input-password:focus-visible,
+.security-form .ant-input-password:focus-visible,
+.profile-form .ant-select-selector:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.form-actions .ant-btn:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .profile-page {
+    background: white;
+    padding: 0;
+  }
+
+  .profile-actions,
+  .form-actions {
+    display: none;
+  }
+
+  .profile-card,
+  .status-card,
+  .stats-card,
+  .details-card,
+  .activity-card,
+  .edit-profile-card,
+  .security-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+
+  @media (max-width: 768px) {
+    .profile-avatar-section {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .profile-info {
+      text-align: center;
+    }
+    
+    .member-since {
+      justify-content: center;
+    }
+  }
+}

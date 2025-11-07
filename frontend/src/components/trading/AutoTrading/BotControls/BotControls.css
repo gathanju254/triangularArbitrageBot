@@ -1,0 +1,20 @@
+/*frontend/src/components/trading/AutoTrading/AutoTrading.css*/
+.auto-trading {
+  background: white;
+  border-radius: 8px;
+}
+
+.settings-section {
+  margin-top: 20px;
+}
+
+.setting-item {
+  margin-bottom: 24px;
+}
+
+.setting-item label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}

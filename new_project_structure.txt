@@ -1,0 +1,386 @@
+triangularArbitrageBot/
+├── backend/
+│   ├── apps/
+│   │   ├── __init__.py
+|   |   |
+│   |   ├── arbitrage_bot/
+│   |   │   ├── __init__.py
+│   │   |   ├── core/
+│   │   |   │   ├── __init__.py
+│   │   │   |   ├── arbitrage_engine.py
+│   │   │   |   ├── market_data.py
+│   │   │   |   ├── order_execution.py
+│   │   │   |   └── risk_manager.py
+│   │   |   ├── exchanges/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── base_exchange.py
+│   │   │   |   ├── binance.py
+│   │   │   |   ├── huobi.py
+│   │   │   |   ├── okx.py
+│   │   │   |   ├── coinbase.py
+│   │   │   |   ├── kraken.py
+│   │   │   |   └── kraken.py
+│   │   |   ├── models/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── arbitrage_opportunity.py
+│   │   │   |   └── trade.py
+│   │   |   ├── views/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── admin_views.py
+│   │   │   |   ├── api_views.py
+│   │   │   |   └── web_views.py
+│   │   |   ├── services/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── service1.py
+│   │   │   |   ├── service2.py
+│   │   │   |   └── service3.py
+│   │   |   ├── urls/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── api_urls.py
+│   │   │   |   ├── web_urls.py
+│   │   │   |   └── admin_urls.py
+│   │   |   ├── utils/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── logger.py
+│   │   │   |   └── helpers.py
+│   │   |   ├── tests/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── test_models.py
+│   │   │   |   ├── test_views.py
+│   │   │   |   └── test_services.py
+│   │   │   ├── signals.py
+│   │   │   ├── apps.py
+│   │   │   ├── admin.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── permissions.py
+│   │   │   ├── serializers.py
+│   │   │   ├── repositories.py
+│   │   │   ├── middleware.py
+│   │   │   ├── validators.py
+│   │   |   └── tasks.py
+|   |   |
+│   |   ├── users/
+│   |   │   ├── __init__.py
+│   │   |   ├── views/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── admin_views.py
+│   │   │   |   ├── api_views.py
+│   │   │   |   └── web_views.py
+│   │   |   ├── services/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── service1.py
+│   │   │   |   ├── service2.py
+│   │   │   |   └── service3.py
+│   │   |   ├── urls/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── api_urls.py
+│   │   │   |   ├── web_urls.py
+│   │   │   |   └── admin_urls.py
+│   │   |   ├── utils/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── helpers.py
+│   │   │   |   └── another_util.py
+│   │   |   ├── tests/
+│   │   │   |   ├── __init__.py
+│   │   │   |   ├── test_models.py
+│   │   │   |   ├── test_views.py
+│   │   │   |   └── test_services.py
+│   │   │   ├── signals.py
+│   │   │   ├── apps.py
+│   │   │   ├── admin.py
+│   │   │   ├── models.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── middleware.py
+│   │   │   ├── permissions.py
+│   │   │   ├── serializers.py
+│   │   │   ├── repositories.py
+│   │   │   ├── validators.py
+│   │   |   └── tasks.py
+|   |   |
+│   │   ├── notifications/
+│   │   │   ├── __init__.py
+│   │   │   ├── admin.py
+│   │   │   ├── apps.py
+│   │   │   ├── models.py
+│   │   │   ├── views/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── api_views.py
+│   │   │   │   ├── web_views.py
+│   │   │   │   └── admin_views.py
+│   │   │   ├── urls/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── api_urls.py
+│   │   │   │   ├── web_urls.py
+│   │   │   │   └── admin_urls.py
+│   │   │   ├── services.py
+│   │   │   ├── tasks.py
+│   │   │   ├── signals.py
+│   │   │   ├── validators.py
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── middleware.py
+│   │   │   ├── helpers.py
+│   │   │   ├── utils.py
+│   │   │   ├── repositories.py
+│   │   │   ├── exceptions.py
+│   │   │   └── tests/
+│   │   │       ├── __init__.py
+│   │   │       ├── test_models.py
+│   │   │       ├── test_views.py
+│   │   │       ├── test_services.py
+│   │   │       └── test_serializers.py
+│   │   │   
+│   │   |   
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── settings/
+|   |   |   ├── base.py
+|   |   |   ├── development.py
+|   |   |   └── production.py
+│   │   └── exchanges.json
+|   |
+│   ├── requirements/
+│   │   ├── base.txt
+│   │   ├── development.txt
+│   │   └── production.txt
+│   ├── manage.py
+│   ├── build.sh
+│   ├── .env
+│   ├── .env.example
+│   └── Dockerfile
+|
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   ├── MainLayout.jsx
+│   │   │   │   ├── MainLayout.css
+│   │   │   │   └── index.js
+│   │   │   ├── common/
+│   │   │   │   ├── Header/
+│   │   │   │   │   ├── Header.jsx
+│   │   │   │   │   ├── Header.css
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── Sidebar/
+│   │   │   │   │   ├── Sidebar.jsx
+│   │   │   │   │   ├── Sidebar.css
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── LoadingSpinner/
+│   │   │   │   │   ├── LoadingSpinner.jsx
+│   │   │   │   │   ├── LoadingSpinner.css
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── NotificationBell/
+│   │   │   │   │   ├── NotificationBell.jsx
+│   │   │   │   │   ├── NotificationBell.css
+│   │   │   │   │   └── index.js
+│   │   │   │   └── ErrorBoundary/
+│   │   │   │       ├── ErrorBoundary.jsx
+│   │   │   │       └── index.js
+│   │   │   ├── dashboard/
+│   │   │   │   ├── StatsCards/
+│   │   │   │   │   ├── StatsCards.jsx
+│   │   │   │   │   ├── StatsCards.css
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── OpportunitiesTable/
+│   │   │   │   │   ├── OpportunitiesTable.jsx
+│   │   │   │   │   ├── OpportunitiesTable.css
+│   │   │   │   │   └── index.js
+│   │   │   │   └── ProfitChart/
+│   │   │   │       ├── ProfitChart.jsx
+│   │   │   │       ├── ProfitChart.css
+│   │   │   │       └── index.js
+│   │   │   ├── trading/
+│   │   │   │   ├── ManualTrading/
+│   │   │   │   │   ├── OrderForm/
+│   │   │   │   │   │   ├── OrderForm.jsx
+│   │   │   │   │   │   ├── OrderForm.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   ├── OrderBook/
+│   │   │   │   │   │   ├── OrderBook.jsx
+│   │   │   │   │   │   ├── OrderBook.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   ├── PositionManager/
+│   │   │   │   │   │   ├── PositionManager.jsx
+│   │   │   │   │   │   ├── PositionManager.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── AutoTrading/
+│   │   │   │   │   ├── StrategyConfig/
+│   │   │   │   │   │   ├── StrategyConfig.jsx
+│   │   │   │   │   │   ├── StrategyConfig.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   ├── BotControls/
+│   │   │   │   │   │   ├── BotControls.jsx
+│   │   │   │   │   │   ├── BotControls.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   ├── PerformanceMetrics/
+│   │   │   │   │   │   ├── PerformanceMetrics.jsx
+│   │   │   │   │   │   ├── PerformanceMetrics.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── shared/
+│   │   │   │   │   ├── TradingViewer/
+│   │   │   │   │   │   ├── TradingViewer.jsx
+│   │   │   │   │   │   ├── TradingViewer.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   ├── MarketData/
+│   │   │   │   │   │   ├── MarketData.jsx
+│   │   │   │   │   │   ├── MarketData.css
+│   │   │   │   │   │   └── index.js
+│   │   │   │   │   └── index.js
+│   │   │   │   └── index.js
+│   │   │   └── settings/
+│   │   │       ├── ExchangeSettings/
+│   │   │       │   ├── ExchangeSettings.jsx
+│   │   │       │   ├── ExchangeSettings.css
+│   │   │       │   └── index.js
+│   │   │       ├── TradingConfig/
+│   │   │       │   ├── TradingConfig.jsx
+│   │   │       │   ├── TradingConfig.css
+│   │   │       │   └── index.js
+│   │   │       └── ApiKeys/
+│   │   │           ├── ApiKeys.jsx
+│   │   │           ├── ApiKeys.css
+│   │   │           └── index.js
+│   │   ├── pages/
+│   │   │   ├── Dashboard/
+│   │   │   │   ├── Dashboard.jsx
+│   │   │   │   ├── Dashboard.css
+│   │   │   │   └── index.js
+│   │   │   ├── Trading/
+│   │   │   │   ├── Trading.jsx
+│   │   │   │   ├── Trading.css
+│   │   │   │   └── index.js
+│   │   │   ├── Analytics/
+│   │   │   │   ├── Analytics.jsx
+│   │   │   │   ├── Analytics.css
+│   │   │   │   └── index.js
+│   │   │   ├── Settings/
+│   │   │   │   ├── Settings.jsx
+│   │   │   │   ├── Settings.css
+│   │   │   │   └── index.js
+│   │   │   └── Login/
+│   │   │   |    ├── Login.jsx
+│   │   │   |    ├── Login.css
+│   │   │   |    └── index.js
+│   │   │   └── register/
+│   │   │   |    ├── Register.jsx
+│   │   │   |    ├── register.css
+│   │   │   |    └── index.js
+│   │   │   └── Profile/
+│   │   │       ├── Profile.jsx
+│   │   │       ├── Profile.css
+│   │   │       └── index.js
+│   │   ├── hooks/
+│   │   │   ├── useArbitrageData.js
+│   │   │   ├── useAuth.js
+│   │   │   ├── useApiKeys.js
+│   │   │   ├── useLocalStorage.js
+│   │   │   ├── useTrading.js
+│   │   │   └── useWebSocket.js
+|   |   |
+│   │   ├── services/
+│   │   │   ├── api/
+│   │   │   │   ├── api.js
+│   │   │   │   ├── analyticsService.js
+│   │   │   │   ├── arbitrageApi.js
+│   │   │   │   ├── arbitrageService.js
+│   │   │   │   ├── authService.js
+│   │   │   │   ├── dashboardService.js
+│   │   │   │   ├── notificationService.js
+│   │   │   │   ├── settingsService.js
+│   │   │   │   ├── tradingService.js
+│   │   │   │   ├── userService.js
+│   │   │   │   └── websocket.js
+│   │   │   └── websocket/
+│   │   │       ├── index.js
+│   │   │       ├── tradingWebSocket.js
+│   │   │       └── handlers/
+│   │   │           ├── index.js
+│   │   │           ├── arbitrageHandler.js
+│   │   │           ├── marketDataHandler.js
+│   │   │           ├── orderHandler.js
+│   │   │           └── tradingHandler.js
+│   │   ├── store/
+│   │   │   ├── index.js
+│   │   │   ├── store.js
+│   │   │   └── slices/
+│   │   │       ├── arbitrageSlice.js
+│   │   │       ├── authSlice.js
+│   │   │       ├── tradingSlice.js
+│   │   │       └── uiSlice.js
+│   │   ├── styles/
+│   │   │   ├── globals.css
+│   │   │   ├── mixins.css
+│   │   │   ├── variables.css
+│   │   │   └── components/
+│   │   │       ├── buttons.css
+│   │   │       ├── forms.css
+│   │   │       └── tables.css
+│   │   ├── utils/
+│   │   │   ├── constants.js
+│   │   │   ├── dateUtils.js
+│   │   │   ├── errorHandler.js
+│   │   │   ├── helpers.js
+│   │   │   ├── numberUtils.js
+│   │   │   ├── formatters.js
+│   │   │   ├── validators.js
+│   │   │   ├── calculations.js
+│   │   │   └── websocket/
+│   │   │       ├── index.js
+│   │   │       ├── connection.js
+│   │   │       ├── messageParser.js
+│   │   │       └── reconnect.js
+│   │   ├── constants/
+│   │   │   ├── api.js
+│   │   │   ├── exchanges.js
+│   │   │   ├── messages.js
+│   │   │   ├── routes.js
+│   │   │   └── trading.js
+│   │   ├── context/
+│   │   │   ├── AuthContext.jsx
+│   │   │   ├── ThemeContext.js
+│   │   │   └── WebSocketContext.js
+│   │   |── App.jsx
+│   │   |── App.css
+│   │   |── index.css
+│   │   └── main.jsx
+|   |   
+│   ├── index.html
+│   ├── Dockerfile
+│   ├── .env
+│   ├── .env.development
+│   ├── .env.production
+│   ├── .gitignore
+│   ├── eslint.config.js
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── postcss.config.js
+│   └── tailwind.config.js
+|
+├── nginx/
+│   ├── nginx.conf
+│   ├── tudollar.conf
+│   └── ssl/
+│       └── .gitkeep
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       ├── cd.yml
+│       └── celery-tasks.yml
+├── scripts/
+│   ├── deploy.sh
+│   ├── backup.sh
+│   ├── setup.sh
+│   └── migrate.sh
+├── docs/
+│   ├── api.md
+│   ├── setup.md
+│   ├── deployment.md
+│   └── architecture.md
+├── docker-compose.yml
+├── render.yaml
+├── .env.example
+├── .gitignore
+├── README.md
+└── LICENSE
