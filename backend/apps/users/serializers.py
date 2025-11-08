@@ -356,6 +356,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_api_key_stats(self, obj):
         """Get API key statistics for the user"""
+        from .services import APIKeyService
         return APIKeyService.get_user_api_key_stats(obj)
 
 

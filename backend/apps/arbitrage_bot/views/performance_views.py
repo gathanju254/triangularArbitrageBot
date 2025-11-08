@@ -94,3 +94,9 @@ def get_performance(request):
             'note': 'Using fallback performance data',
             'timestamp': time.time()
         })
+
+@api_view(['GET'])
+def get_performance_alias(request):
+    """Get performance metrics - alias for api_views.get_performance"""
+    from .api_views import get_performance as api_get_performance
+    return api_get_performance(request)

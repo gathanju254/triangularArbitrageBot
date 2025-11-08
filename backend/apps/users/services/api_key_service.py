@@ -290,18 +290,23 @@ class APIKeyService:
             all_keys = APIKey.objects.filter(user=user)
             active_keys = all_keys.filter(is_active=True)
             validated_keys = active_keys.filter(is_validated=True)
-            trading_keys = APIKey.get_trading_keys_for_user(user)
+            
+            # Fix: Replace contains lookup with manual filtering for trading keys
+            trading_keys = 0
+            for key in active_keys.filter(is_validated=True):
+                if 'trade' in key.permissions:
+                    trading_keys += 1
             
             # Permission statistics
-            read_keys = active_keys.filter(permissions__contains=['read'])
-            trade_keys = active_keys.filter(permissions__contains=['trade'])
-            withdraw_keys = active_keys.filter(permissions__contains=['withdraw'])
+            read_keys = active_keys.filter(permissions__ilike='%read%')
+            trade_keys = active_keys.filter(permissions__ilike='%trade%')
+            withdraw_keys = active_keys.filter(permissions__ilike='%withdraw%')
             
             stats = {
                 'total_keys': all_keys.count(),
                 'active_keys': active_keys.count(),
                 'validated_keys': validated_keys.count(),
-                'trading_keys': trading_keys.count(),
+                'trading_keys': trading_keys,
                 'validation_rate': round((validated_keys.count() / active_keys.count() * 100) if active_keys.count() > 0 else 0, 1),
                 'exchanges': list(all_keys.values_list('exchange', flat=True).distinct()),
                 'recently_used': all_keys.filter(last_used__isnull=False).order_by('-last_used')[:5].count(),
@@ -332,6 +337,46 @@ class APIKeyService:
                     'trade': 0,
                     'withdraw': 0,
                 }
+            }
+    
+    @staticmethod
+    def get_user_api_key_stats_simple(user: User) -> Dict[str, Any]:
+        """Get simplified API key statistics for a user"""
+        try:
+            api_keys = APIKey.objects.filter(user=user)
+            total = api_keys.count()
+            active = api_keys.filter(is_active=True).count()
+            validated = api_keys.filter(is_active=True, is_validated=True).count()
+            
+            # Fix: Replace contains lookup with manual filtering
+            trading_keys = 0
+            for key in api_keys.filter(is_active=True, is_validated=True):
+                if 'trade' in key.permissions:
+                    trading_keys += 1
+            
+            # Get exchanges with active keys
+            exchanges_with_keys = api_keys.filter(is_active=True).values_list('exchange', flat=True).distinct().count()
+            
+            return {
+                'total_keys': total,
+                'active_keys': active,
+                'validated_keys': validated,
+                'trading_keys': trading_keys,
+                'exchanges_with_keys': exchanges_with_keys,
+                'validation_rate': round((validated / active * 100) if active > 0 else 0, 1),
+                'health_status': 'healthy' if validated > 0 else 'needs_attention'
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get API key stats: {e}")
+            return {
+                'total_keys': 0,
+                'active_keys': 0,
+                'validated_keys': 0,
+                'trading_keys': 0,
+                'exchanges_with_keys': 0,
+                'validation_rate': 0,
+                'health_status': 'error'
             }
     
     @staticmethod

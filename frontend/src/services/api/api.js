@@ -1,10 +1,12 @@
 // frontend/src/services/api/api.js
 import axios from 'axios';
 
-// Use Vite environment variable with proper fallbacks
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://tudollar-backend.onrender.com/api';
+// Use Vite environment variable with proper fallbacks for development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV ? 'http://localhost:8000' : 'https://tudollar-backend.onrender.com');
 
 console.log('API Base URL:', API_BASE_URL); // Debug log
+console.log('Environment Mode:', import.meta.env.MODE); // Debug log
 
 // Track if refresh is in progress to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -24,7 +26,7 @@ const processQueue = (error, token = null) => {
 // Create axios instance with enhanced configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased timeout for better reliability
+  timeout: import.meta.env.DEV ? 30000 : 15000, // Longer timeout for local development
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,6 +34,13 @@ const api = axios.create({
 
 // === Enhanced Error Handler ===
 const handleApiError = (error, fallbackData = null) => {
+  // Handle network errors specifically for local development
+  if (!error.response && import.meta.env.DEV) {
+    console.warn('⚠️ Local development: No server running, using fallback data');
+    if (fallbackData !== undefined) return fallbackData;
+    throw new Error('Development server not running. Please start the Django server.');
+  }
+
   if (error.response?.status === 401) {
     // Redirect to login
     localStorage.removeItem('access_token');
@@ -355,9 +364,9 @@ export const clearFailedQueue = () => {
 };
 
 /**
- * Make authenticated API call with automatic token refresh
+ * Make authenticated API call with automatic token refresh and fallback for local development
  */
-export const authenticatedApiCall = async (method, url, data = null, options = {}) => {
+export const authenticatedApiCall = async (method, url, data = null, options = {}, fallbackData = null) => {
   try {
     const config = {
       method,
@@ -377,28 +386,62 @@ export const authenticatedApiCall = async (method, url, data = null, options = {
     return response.data;
   } catch (error) {
     console.error(`API call failed: ${method} ${url}`, error);
+    
+    // In development, return fallback data if server is not running
+    if (import.meta.env.DEV && !error.response && fallbackData !== undefined) {
+      console.warn(`⚠️ Development: Using fallback data for ${url}`);
+      return fallbackData;
+    }
+    
     throw error;
   }
 };
 
 /**
- * Convenience methods for common HTTP verbs
+ * Convenience methods for common HTTP verbs with development fallbacks
  */
 export const apiClient = {
-  get: (url, params = {}, options = {}) => 
-    authenticatedApiCall('get', url, params, options),
+  get: (url, params = {}, options = {}, fallbackData = null) => 
+    authenticatedApiCall('get', url, params, options, fallbackData),
   
-  post: (url, data = {}, options = {}) => 
-    authenticatedApiCall('post', url, data, options),
+  post: (url, data = {}, options = {}, fallbackData = null) => 
+    authenticatedApiCall('post', url, data, options, fallbackData),
   
-  put: (url, data = {}, options = {}) => 
-    authenticatedApiCall('put', url, data, options),
+  put: (url, data = {}, options = {}, fallbackData = null) => 
+    authenticatedApiCall('put', url, data, options, fallbackData),
   
-  patch: (url, data = {}, options = {}) => 
-    authenticatedApiCall('patch', url, data, options),
+  patch: (url, data = {}, options = {}, fallbackData = null) => 
+    authenticatedApiCall('patch', url, data, options, fallbackData),
   
-  delete: (url, data = {}, options = {}) => 
-    authenticatedApiCall('delete', url, data, options),
+  delete: (url, data = {}, options = {}, fallbackData = null) => 
+    authenticatedApiCall('delete', url, data, options, fallbackData),
+};
+
+/**
+ * Development helper to check if backend is running
+ */
+export const checkBackendConnection = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/health/`, { timeout: 5000 });
+    return response.status === 200;
+  } catch (error) {
+    console.warn('Backend connection check failed:', error);
+    return false;
+  }
+};
+
+/**
+ * Development helper to get connection status
+ */
+export const getConnectionStatus = () => {
+  return {
+    apiBaseUrl: API_BASE_URL,
+    isDevelopment: import.meta.env.DEV,
+    isAuthenticated: isAuthenticated(),
+    tokenExpiringSoon: isTokenExpiringSoon(),
+    refreshInProgress: isRefreshing,
+    queuedRequests: failedQueue.length
+  };
 };
 
 export default api;

@@ -229,6 +229,56 @@ def get_opportunities(request):
         })
 
 @api_view(['GET'])
+def get_performance(request):
+    """Get performance and profit history data"""
+    try:
+        days = int(request.query_params.get('days', 7))
+        
+        # Generate mock profit history (replace with real data from your database)
+        import random
+        from datetime import datetime, timedelta
+        
+        profit_history = []
+        base_profit = 100
+        for i in range(days, 0, -1):
+            date = datetime.now() - timedelta(days=i)
+            profit = base_profit + (random.random() * 50 - 25)
+            base_profit = profit
+            
+            profit_history.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'profit': max(0, float(profit)),
+                'cumulative': float(base_profit)
+            })
+        
+        # Mock stats
+        stats = {
+            'total_profit': 1250.75,
+            'total_trades': 45,
+            'success_rate': 87.5,
+            'active_opportunities': 3,
+            'today_profit': 150.25,
+            'avg_profit_percentage': 2.5,
+            'total_opportunities': 156,
+            'successful_trades': 39,
+            'avg_profit_per_trade': 27.53
+        }
+        
+        return Response({
+            'profit_history': profit_history,
+            'stats': stats,
+            'period_days': days
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting performance data: {e}")
+        return Response({
+            'error': 'Failed to get performance data',
+            'profit_history': [],
+            'stats': {}
+        }, status=500)
+
+@api_view(['GET'])
 def system_status(request):
     """Get current system status"""
     try:

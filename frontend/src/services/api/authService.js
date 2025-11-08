@@ -32,6 +32,8 @@ export const authService = {
         throw new Error(data?.error || 'Invalid username or password');
       } else if (status === 400) {
         throw new Error(data?.error || 'Invalid login data');
+      } else if (status === 404) {
+        throw new Error('Login endpoint not found. Please check server configuration.');
       } else if (!error || !error.response) {
         // Network / timeout / unexpected failure
         throw new Error('Network error - cannot reach server');
@@ -42,25 +44,27 @@ export const authService = {
   },
 
   async logout() {
-    try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
-        // Ask server to blacklist the refresh token before clearing client storage
+  try {
+    const refreshToken = localStorage.getItem('refresh_token');
+    
+    // Try to call logout endpoint, but don't fail if it doesn't work
+    if (refreshToken) {
+      try {
         await api.post('/users/logout/', { refresh_token: refreshToken });
-      } else {
-        // Fallback: try to call logout without body (server may accept Authorization header)
-        await api.post('/users/logout/', {}).catch(() => {});
+      } catch (error) {
+        console.warn('Logout endpoint call failed, but continuing with client cleanup:', error);
       }
-    } catch (error) {
-      console.warn('Logout endpoint not available or failed:', error);
-    } finally {
-      // Always clear local storage
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('access_token_expires');
-      console.log('✅ Logout successful');
     }
-  },
+  } catch (error) {
+    console.warn('Unexpected error during logout API call:', error);
+  } finally {
+    // Always clear local storage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('access_token_expires');
+    console.log('✅ Logout successful - client session cleared');
+  }
+},
 
   async refreshToken() {
     const refreshToken = localStorage.getItem('refresh_token');
@@ -84,6 +88,8 @@ export const authService = {
         throw new Error('Session expired. Please log in again.');
       } else if (error.response?.status === 400) {
         throw new Error('Invalid refresh token');
+      } else if (error.response?.status === 404) {
+        throw new Error('Token refresh endpoint not found');
       } else if (!error.response) {
         throw new Error('Network error during token refresh');
       } else {

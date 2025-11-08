@@ -1,6 +1,5 @@
+# backend/apps/arbitrage_bot/views/__init__.py
 # Import all view functions to make them accessible
-# Import all view modules to make them accessible
-# Import all view modules to make them accessible
 from .api_views import *
 from .web_views import *
 from .admin_views import *

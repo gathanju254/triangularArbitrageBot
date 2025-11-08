@@ -467,11 +467,15 @@ class APIKey(models.Model):
     @classmethod
     def get_trading_keys_for_user(cls, user):
         """Get API keys with trading permissions"""
-        return cls.objects.filter(
-            user=user, 
-            is_active=True, 
-            is_validated=True
-        ).filter(permissions__contains=['trade'])
+        # Manual filtering instead of contains lookup
+        trading_keys = []
+        all_keys = cls.objects.filter(user=user, is_active=True, is_validated=True)
+        
+        for key in all_keys:
+            if 'trade' in key.permissions:
+                trading_keys.append(key)
+        
+        return trading_keys
 
     @property
     def requires_passphrase(self) -> bool:

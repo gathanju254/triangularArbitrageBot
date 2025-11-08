@@ -3,17 +3,7 @@ import logging
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-try:
-    from rest_framework_simplejwt.tokens import RefreshToken
-except Exception:
-    class _MissingRefreshToken:
-        @staticmethod
-        def for_user(user):
-            raise RuntimeError(
-                "rest_framework_simplejwt.tokens.RefreshToken is not available; "
-                "please install 'djangorestframework-simplejwt' to enable JWT token operations."
-            )
-    RefreshToken = _MissingRefreshToken()
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
@@ -44,6 +34,9 @@ def register_user(request):
         'username': request.data.get('username'),
         'email': request.data.get('email')
     })
+    
+    # Log the incoming data for debugging
+    logger.debug(f"📝 Registration data: { {k: v for k, v in request.data.items() if k != 'password'} }")
     
     serializer = UserRegistrationSerializer(data=request.data)
     
@@ -76,9 +69,17 @@ def register_user(request):
             'errors': serializer.errors
         })
         
+        # Format errors for better frontend handling
+        formatted_errors = {}
+        for field, errors in serializer.errors.items():
+            if isinstance(errors, list):
+                formatted_errors[field] = errors[0] if errors else "Invalid value"
+            else:
+                formatted_errors[field] = str(errors)
+        
         return Response({
             'error': 'Validation failed',
-            'details': serializer.errors
+            'details': formatted_errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -134,27 +135,33 @@ def logout_user(request):
     """
     try:
         refresh_token = request.data.get('refresh_token')
-        # fallback: allow clients to send refresh token via Authorization header (rare)
+        
         if not refresh_token:
-            auth = request.META.get('HTTP_AUTHORIZATION', '') or request.headers.get('Authorization', '')
-            if auth and auth.startswith('Bearer '):
-                candidate = auth.split(' ', 1)[1].strip()
-                refresh_token = candidate
-
-        if not refresh_token:
-            # best-effort: nothing to blacklist, but respond OK to complete logout
+            # If no refresh token provided, just clear client-side and return success
             logger.info(f"✅ User logout requested (no refresh token) by user: {getattr(request.user, 'username', 'Unknown')}")
-            return Response({'message': 'Logged out (no refresh token provided)'}, status=status.HTTP_200_OK)
+            return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
 
-        token = RefreshToken(refresh_token)
-        token.blacklist()
+        try:
+            # Try to blacklist the token if blacklist app is configured
+            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+            from rest_framework_simplejwt.tokens import RefreshToken
+            
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            logger.info(f"✅ User logged out with token blacklist: {request.user.username}")
+            
+        except AttributeError:
+            # Blacklist app not configured, but we can still proceed
+            logger.warning("⚠️ Token blacklist not available, proceeding with basic logout")
+        except Exception as e:
+            logger.warning(f"⚠️ Token blacklist failed, but proceeding with logout: {e}")
 
         logger.info(f"✅ User logged out: {request.user.username}")
         return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
 
     except Exception as e:
         logger.error(f"❌ Logout failed: {e}")
-        return Response({'error': 'Invalid token or logout failed'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Logout failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
