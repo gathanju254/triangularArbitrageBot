@@ -100,6 +100,24 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await userService.register(userData);
+      
+      // Auto-login after successful registration if tokens are returned
+      if (response.access) {
+        localStorage.setItem('access_token', response.access);
+        localStorage.setItem('refresh_token', response.refresh);
+        
+        const currentUser = authService.getCurrentUser();
+        setUser(currentUser);
+        
+        // Fetch user profile
+        try {
+          const profile = await userService.getUserProfile();
+          setUserProfile(profile);
+        } catch (profileError) {
+          console.warn('Could not load user profile after registration:', profileError);
+        }
+      }
+      
       return response;
     } catch (error) {
       console.error('Registration failed:', error);

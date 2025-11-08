@@ -1,1 +1,117 @@
 /* frontend/src/pages/Register/Register.css */
+/* Register Page Styles */
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.register-logo {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.register-title {
+  color: #262626;
+  margin-bottom: 8px !important;
+  text-align: center;
+}
+
+.register-subtitle {
+  text-align: center;
+  display: block;
+  margin-bottom: 24px;
+}
+
+.register-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.register-button {
+  height: 44px;
+  font-weight: 500;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  margin-top: 8px;
+}
+
+.register-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.login-link {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.login-link:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Form input focus effects */
+.register-form .ant-input:focus,
+.register-form .ant-input-password:focus,
+.register-form .ant-input-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .register-container {
+    padding: 16px;
+  }
+  
+  .register-card {
+    margin: 0;
+  }
+  
+  .register-logo {
+    font-size: 36px;
+  }
+  
+  .register-title {
+    font-size: 24px !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .register-card {
+    background: rgba(45, 45, 45, 0.9);
+  }
+  
+  .register-title {
+    color: #ffffff;
+  }
+  
+  .register-subtitle {
+    color: #b0b0b0;
+  }
+}

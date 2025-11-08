@@ -15,4 +15,9 @@ urlpatterns = [
     path('user-tools/admin/', include('apps.users.urls.admin_urls')),  # Admin user tools
     path('api/users/', include('apps.users.urls.api_urls')),  # User API endpoints
     path('accounts/', include('apps.users.urls.web_urls')),  # Authentication / user web UI
+    
+    # Notification URLs - integrated into TAB
+    path('api/notifications/', include('apps.notifications.urls.api_urls')),  # Notification API endpoints
+    path('notifications/', include('apps.notifications.urls.web_urls')),  # Notification web views
+    path('admin/notifications/', include('apps.notifications.urls.admin_urls')),  # Admin notification tools
 ]

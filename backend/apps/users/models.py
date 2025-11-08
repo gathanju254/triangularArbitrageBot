@@ -27,6 +27,24 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Add related_name to avoid clashes with auth.User
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='custom_user_set',  # Changed from default
+        related_query_name='user',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='custom_user_set',  # Changed from default
+        related_query_name='user',
+    )
+    
     class Meta:
         db_table = 'users'
         verbose_name = 'User'

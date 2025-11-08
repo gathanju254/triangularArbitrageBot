@@ -26,7 +26,8 @@ from ..serializers import (
     ExchangeCredentialsSerializer
 )
 from ..services.user_service import UserService
-from apps.exchanges.services import ExchangeService
+from apps.arbitrage_bot.exchanges.binance import BinanceClient
+from apps.arbitrage_bot.exchanges.kraken import KrakenClient
 
 logger = logging.getLogger(__name__)
 
@@ -226,32 +227,30 @@ def validate_exchange_credentials(request):
     logger.info(f"🔍 Validating exchange credentials for {exchange}")
     
     try:
-        # Test connection
-        exchange_service = ExchangeService()
-        result = exchange_service.test_connection(
-            exchange=exchange,
-            api_key=api_key,
-            secret_key=secret_key,
-            passphrase=passphrase
-        )
+        # Test connection using existing exchange clients
+        if exchange.lower() == 'binance':
+            # Create a temporary Binance client for testing
+            client = BinanceClient()
+            result = client.test_connection()
+        elif exchange.lower() == 'kraken':
+            # Create a temporary Kraken client for testing  
+            client = KrakenClient()
+            result = client.test_connection()
+        else:
+            return Response({
+                'error': f'Unsupported exchange: {exchange}',
+                'valid': False
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         logger.info(f"✅ Exchange credentials validation completed for {exchange}")
         
         return Response({
-            'valid': result.get('connected', False),
+            'valid': result[0] if isinstance(result, tuple) else False,
             'exchange': exchange,
-            'permissions': result.get('permissions', []),
-            'account_type': result.get('account_type', 'unknown'),
-            'error': result.get('error'),
+            'message': result[1] if isinstance(result, tuple) else str(result),
             'timestamp': timezone.now().isoformat()
         })
         
-    except ImportError:
-        logger.error("Exchange service not available for credentials validation")
-        return Response({
-            'error': 'Exchange service not available',
-            'valid': False
-        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     except Exception as e:
         logger.error(f"❌ Exchange credentials validation failed: {e}")
         return Response({

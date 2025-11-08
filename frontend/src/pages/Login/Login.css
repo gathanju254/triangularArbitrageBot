@@ -1,118 +1,120 @@
 /* frontend/src/pages/Login/Login.css */
-/* =========================================
-   LOGIN PAGE — Combined + Optimized
-   ========================================= */
-
-/* Main layout wrapper */
+/* Login Page Styles */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
-/* Login Card */
 .login-card {
   width: 100%;
-  max-width: 400px;          /* keeps from first version */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* stronger shadow */
+  max-width: 400px;
   border-radius: 12px;
-  border: none;
-  overflow: hidden;
-  background: #fff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
-/* Header section */
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
-  padding: 20px 0 0 0;
+  margin-bottom: 8px;
 }
 
-/* Logo icon */
 .login-logo {
   font-size: 48px;
   color: #1890ff;
   margin-bottom: 16px;
-  display: block;
 }
 
-/* Title / subtitle */
 .login-title {
-  color: #1890ff !important;
+  color: #262626;
   margin-bottom: 8px !important;
-  font-weight: 700;
+  text-align: center;
 }
 
 .login-subtitle {
-  font-size: 14px;
-  letter-spacing: 0.5px;
+  text-align: center;
+  display: block;
+  margin-bottom: 24px;
 }
 
-/* Form */
-.login-form {
-  margin-top: 8px;
+.login-form .ant-form-item {
+  margin-bottom: 16px;
 }
 
-/* Login button */
 .login-button {
-  height: 48px;
-  font-weight: 600;
-  font-size: 16px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #1890ff, #096dd9);
+  height: 44px;
+  font-weight: 500;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
   border: none;
-  transition: all 0.3s ease;
+  margin-top: 8px;
 }
 
 .login-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
-/* Footer */
+.register-link-button {
+  height: 44px;
+  font-weight: 500;
+  border-radius: 6px;
+  border-color: #d9d9d9;
+  color: #595959;
+}
+
+.register-link-button:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+  transform: translateY(-1px);
+}
+
 .login-footer {
-  text-align: center;
-  margin-top: 24px;
-  padding: 16px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  margin-top: 16px;
 }
 
-/* =========================================
-   Responsive (Mobile)
-   ========================================= */
+/* Form input focus effects */
+.login-form .ant-input:focus,
+.login-form .ant-input-password:focus,
+.login-form .ant-input-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Responsive Design */
 @media (max-width: 480px) {
   .login-container {
     padding: 16px;
   }
-
+  
   .login-card {
-    max-width: 100%;
+    margin: 0;
   }
-
+  
   .login-logo {
     font-size: 36px;
   }
-
+  
   .login-title {
     font-size: 24px !important;
   }
 }
 
-/* =========================================
-   Dark mode support
-   ========================================= */
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .login-card {
-    background: #1f1f1f;
+    background: rgba(45, 45, 45, 0.9);
   }
-
-  .login-footer {
-    background: #141414;
-    border-color: #303030;
+  
+  .login-title {
+    color: #ffffff;
+  }
+  
+  .login-subtitle {
+    color: #b0b0b0;
   }
 }

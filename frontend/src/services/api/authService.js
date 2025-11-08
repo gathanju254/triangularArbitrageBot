@@ -24,15 +24,19 @@ export const authService = {
     } catch (error) {
       console.error('❌ Login failed:', error);
       
-      // Provide consistent error messages
-      if (error.response?.status === 401) {
-        throw new Error(error.response.data?.error || 'Invalid username or password');
-      } else if (error.response?.status === 400) {
-        throw new Error(error.response.data?.error || 'Invalid login data');
-      } else if (!error.response) {
+      // Defensive handling: error may be null (seen on timeouts / aborted requests)
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      if (status === 401) {
+        throw new Error(data?.error || 'Invalid username or password');
+      } else if (status === 400) {
+        throw new Error(data?.error || 'Invalid login data');
+      } else if (!error || !error.response) {
+        // Network / timeout / unexpected failure
         throw new Error('Network error - cannot reach server');
       } else {
-        throw new Error(error.response.data?.error || 'Login failed');
+        throw new Error(data?.error || 'Login failed');
       }
     }
   },

@@ -1,10 +1,11 @@
 // frontend/src/pages/Login/Login.jsx
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message, Typography } from 'antd';
-import { UserOutlined, LockOutlined, RocketOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, message, Typography, Divider } from 'antd';
+import { UserOutlined, LockOutlined, RocketOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { TradingLoader } from '../../components/common/LoadingSpinner/LoadingSpinner';
+import { ROUTES } from '../../constants/routes';
 import './Login.css';
 
 const { Title, Text } = Typography;
@@ -98,10 +99,20 @@ const Login = () => {
           </Form.Item>
         </Form>
 
+        <Divider plain>New to TAB Trading?</Divider>
+
         <div className="login-footer">
-          <Text type="secondary">
-            Demo Credentials: admin / password
-          </Text>
+          <Link to={ROUTES.REGISTER}>
+            <Button 
+              type="default" 
+              icon={<UserAddOutlined />} 
+              block 
+              size="large"
+              className="register-link-button"
+            >
+              Create New Account
+            </Button>
+          </Link>
         </div>
       </Card>
     </div>
