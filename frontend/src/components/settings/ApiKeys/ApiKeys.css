@@ -1,1 +1,47 @@
 /*frontend/src/components/settings/ApiKeys/ApiKeys.css*/
+.api-keys-container {
+  padding: 0;
+}
+
+.api-keys-header {
+  margin-bottom: 24px;
+}
+
+.api-keys-header .ant-typography {
+  margin-bottom: 8px;
+}
+
+/* Table styling */
+.api-keys-container .ant-table {
+  border-radius: 8px;
+}
+
+.api-keys-container .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+/* Modal styling */
+.api-keys-container .ant-modal-body {
+  padding: 24px;
+}
+
+.api-keys-container .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .api-keys-container {
+    padding: 8px;
+  }
+  
+  .api-keys-container .ant-table {
+    font-size: 12px;
+  }
+  
+  .api-keys-container .ant-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}

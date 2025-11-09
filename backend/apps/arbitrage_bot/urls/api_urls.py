@@ -6,7 +6,8 @@ from ..views.api_views import (
     get_opportunities,
     health_check,
     reset_system,
-    get_performance
+    get_performance,
+    trading_config
 )
 from ..views.trading_views import (
     start_trading_monitor,
@@ -31,10 +32,10 @@ urlpatterns = [
     path('system/health/', health_check, name='health_check'),
     path('system/reset/', reset_system, name='reset_system'),
     
-    # Opportunities & Performance - ADD THESE MISSING ENDPOINTS
+    # Opportunities & Performance
     path('opportunities/', get_opportunities, name='get_opportunities'),
-    path('profit-history/', get_performance, name='profit_history'),  # Frontend expects this
-    path('stats/', get_performance, name='get_stats'),  # For dashboard stats
+    path('profit-history/', get_performance, name='profit_history'),
+    path('stats/', get_performance, name='get_stats'),
     path('performance/', get_performance, name='get_performance'),
     
     # Trading endpoints
@@ -44,8 +45,11 @@ urlpatterns = [
     path('trading/monitor/stop/', stop_trading_monitor, name='stop_trading_monitor'),
     path('trading/monitor/status/', get_trading_monitor_status, name='get_trading_monitor_status'),
     
+    # Trading Configuration endpoint
+    path('trading-config/', trading_config, name='trading-config'),
+    
     # Dashboard endpoints
-    path('dashboard/overview/', get_opportunities, name='dashboard_overview'),  # Reuse opportunities for now
+    path('dashboard/overview/', get_opportunities, name='dashboard_overview'),
     
     # Settings & Risk Management
     path('settings/', get_settings, name='get_settings'),

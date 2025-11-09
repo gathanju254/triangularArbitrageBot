@@ -1,1 +1,75 @@
 /*frontend/src/components/settings/TradingConfig/TradingConfig.css*/
+.trading-config-container {
+  padding: 0;
+}
+
+.trading-config-header {
+  margin-bottom: 24px;
+}
+
+.config-section-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background-color: #fafafa;
+}
+
+.config-section-card .ant-card-body {
+  padding: 16px;
+}
+
+/* Collapse panel styling */
+.trading-config-container .ant-collapse {
+  background: transparent;
+  border: none;
+}
+
+.trading-config-container .ant-collapse-item {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.trading-config-container .ant-collapse-header {
+  background-color: #f5f5f5;
+  padding: 16px 24px;
+  font-weight: 600;
+}
+
+.trading-config-container .ant-collapse-content {
+  border-top: 1px solid #d9d9d9;
+}
+
+.trading-config-container .ant-collapse-content-box {
+  padding: 0;
+}
+
+/* Form styling */
+.trading-config-container .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.trading-config-container .ant-form-item-label > label {
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .trading-config-container {
+    padding: 8px;
+  }
+  
+  .config-actions {
+    text-align: center;
+  }
+  
+  .config-actions .ant-space {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .trading-config-container .ant-collapse-header {
+    padding: 12px 16px;
+  }
+}

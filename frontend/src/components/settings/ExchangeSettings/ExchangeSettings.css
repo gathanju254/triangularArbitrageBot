@@ -1,236 +1,53 @@
 /* frontend/src/components/settings/ExchangeSettings/ExchangeSettings.css */
-
-.exchange-settings {
+.exchange-settings-container {
   padding: 0;
-  background: white;
-  border-radius: 8px;
-}
-
-.exchange-settings .ant-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.exchange-settings .ant-card-small > .ant-card-head {
-  min-height: 40px;
-  padding: 8px 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.exchange-settings .ant-card-small > .ant-card-body {
-  padding: 16px;
-}
-
-.exchange-settings .exchange-card {
-  margin-bottom: 16px;
-  border: 1px solid #f0f0f0;
-  transition: all 0.3s ease;
-  border-radius: 8px;
-}
-
-.exchange-settings .exchange-card:hover {
-  border-color: #1890ff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.exchange-settings .exchange-card-active {
-  border-color: #1890ff;
-  background: linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%);
-}
-
-.exchange-settings .exchange-card-content {
-  padding: 8px 0;
-}
-
-.exchange-settings .ant-form-item {
-  margin-bottom: 16px;
-}
-
-.exchange-settings .ant-tag {
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  line-height: 18px;
 }
 
 .exchange-settings-header {
   margin-bottom: 24px;
 }
 
-.quick-actions {
-  background: #f8f9fa;
-  padding: 12px 16px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+.settings-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
 }
 
-.exchange-settings-footer {
-  background: #fafafa;
-  padding: 16px;
-  border-radius: 6px;
-  margin-top: 24px;
-  border-top: 1px solid #f0f0f0;
+.settings-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.settings-card .ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Form styling */
+.exchange-settings-container .ant-form-item-label > label {
+  font-weight: 500;
+  color: #434343;
+}
+
+.exchange-settings-container .ant-slider {
+  margin: 8px 6px 16px;
+}
+
+.exchange-settings-container .ant-input-number {
+  width: 100%;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .exchange-settings .ant-col {
-    margin-bottom: 16px;
+  .exchange-settings-container {
+    padding: 8px;
   }
   
-  .exchange-settings .exchange-card {
-    margin-bottom: 8px;
+  .settings-actions {
+    text-align: center;
   }
   
-  .exchange-settings .ant-space {
+  .settings-actions .ant-space {
     width: 100%;
-    justify-content: space-between;
-  }
-  
-  .exchange-settings .ant-card-small > .ant-card-body {
-    padding: 12px;
-  }
-  
-  .quick-actions {
-    padding: 8px 12px;
-  }
-  
-  .exchange-settings-footer {
-    padding: 12px;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .exchange-settings {
-    background: #141414;
-  }
-  
-  .exchange-settings .ant-card {
-    background: #141414;
-    border-color: #303030;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-  
-  .exchange-settings .ant-card-small > .ant-card-head {
-    background: #1f1f1f;
-    border-bottom-color: #303030;
-  }
-  
-  .exchange-settings .exchange-card {
-    background: #141414;
-    border-color: #303030;
-  }
-  
-  .exchange-settings .exchange-card:hover {
-    border-color: #1890ff;
-    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
-  }
-  
-  .exchange-settings .exchange-card-active {
-    border-color: #1890ff;
-    background: linear-gradient(135deg, #1d371c 0%, #111d2c 100%);
-  }
-  
-  .quick-actions {
-    background: #1f1f1f;
-    border-color: #303030;
-  }
-  
-  .exchange-settings-footer {
-    background: #1f1f1f;
-    border-top-color: #303030;
-  }
-}
-
-/* Additional utility classes for better spacing */
-.exchange-settings .ant-card-head-wrapper {
-  align-items: center;
-}
-
-.exchange-settings .ant-card-extra {
-  display: flex;
-  align-items: center;
-}
-
-.exchange-settings .ant-statistic {
-  text-align: center;
-}
-
-.exchange-settings .ant-statistic-content {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* Loading states */
-.exchange-settings .ant-card-loading {
-  opacity: 0.7;
-}
-
-.exchange-settings .ant-card-loading-content {
-  pointer-events: none;
-}
-
-/* Form enhancements */
-.exchange-settings .ant-form-item-label > label {
-  font-weight: 500;
-}
-
-.exchange-settings .ant-input-number {
-  width: 100%;
-}
-
-.exchange-settings .ant-switch {
-  margin: 2px 0;
-}
-
-/* Tag enhancements for better visibility */
-.exchange-settings .ant-tag-blue {
-  background: #e6f7ff;
-  border-color: #91d5ff;
-  color: #1890ff;
-}
-
-.exchange-settings .ant-tag-green {
-  background: #f6ffed;
-  border-color: #b7eb8f;
-  color: #52c41a;
-}
-
-.exchange-settings .ant-tag-red {
-  background: #fff2f0;
-  border-color: #ffccc7;
-  color: #ff4d4f;
-}
-
-.exchange-settings .ant-tag-orange {
-  background: #fff7e6;
-  border-color: #ffd591;
-  color: #fa8c16;
-}
-
-/* Hover effects for interactive elements */
-.exchange-settings .ant-btn:not(:disabled):hover {
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-
-.exchange-settings .ant-switch-checked {
-  background-color: #52c41a;
-}
-
-/* Print styles */
-@media print {
-  .exchange-settings .ant-card {
-    box-shadow: none;
-    border: 1px solid #d9d9d9;
-  }
-  
-  .exchange-settings .quick-actions,
-  .exchange-settings .exchange-settings-footer {
-    display: none;
+    justify-content: center;
   }
 }

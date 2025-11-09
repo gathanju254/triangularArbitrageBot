@@ -1,7 +1,7 @@
 # backend/apps/users/views/api_views.py
 import logging
 from rest_framework import status, generics, permissions, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
@@ -20,6 +20,41 @@ from ..services.user_service import UserService
 from ..services.security_service import SecurityService
 
 logger = logging.getLogger(__name__)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_api_keys(request):
+    """Get all API keys for the current user"""
+    try:
+        api_keys = APIKey.objects.filter(user=request.user).order_by('-created_at')
+        
+        # Format the response to match frontend expectations
+        keys_data = []
+        for key in api_keys:
+            keys_data.append({
+                'id': key.id,
+                'exchange': key.exchange,
+                'label': key.label,
+                'api_key': key.api_key,  # This will be encrypted in the database
+                'secret_key': key.secret_key,  # This will be encrypted in the database
+                'passphrase': key.passphrase,
+                'is_active': key.is_active,
+                'is_validated': key.is_validated,
+                'created_at': key.created_at.isoformat() if key.created_at else None,
+                'last_used': key.last_used.isoformat() if key.last_used else None,
+            })
+        
+        return Response({
+            'api_keys': keys_data,
+            'count': len(keys_data)
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': str(e),
+            'api_keys': []  # Always return empty array on error
+        }, status=500)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -124,22 +159,36 @@ class APIKeyViewSet(viewsets.ModelViewSet):
             logger.debug(f"Cache clearance error: {e}")
     
     def list(self, request, *args, **kwargs):
-        """List API keys with enhanced response"""
-        response = super().list(request, *args, **kwargs)
-        
-        # Add statistics to response
-        stats = APIKeyService.get_user_api_key_stats(request.user)
-        # FIXED: Use local health check instead of APIKeyManager
-        health = self._get_api_key_health(request.user)
-        
-        response.data = {
-            'api_keys': response.data,
-            'statistics': stats,
-            'health_status': health,
-            'count': len(response.data)
-        }
-        
-        return response
+        """List API keys with enhanced response - FIXED for frontend compatibility"""
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            
+            # Add statistics to response
+            stats = APIKeyService.get_user_api_key_stats(request.user)
+            health = self._get_api_key_health(request.user)
+            
+            # Return consistent structure that frontend expects
+            response_data = {
+                'api_keys': serializer.data,  # This is the main array of API keys
+                'statistics': stats,
+                'health_status': health,
+                'count': len(serializer.data)
+            }
+            
+            logger.info(f"✅ API keys list response prepared with {len(serializer.data)} keys")
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"❌ API keys list error: {e}")
+            # Return empty array structure to prevent frontend errors
+            return Response({
+                'api_keys': [],
+                'statistics': {},
+                'health_status': {},
+                'count': 0,
+                'error': 'Failed to load API keys'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _get_api_key_health(self, user):
         """Get API key health status"""
@@ -202,7 +251,6 @@ class APIKeyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def bulk_validate(self, request):
         """Bulk validate all API keys"""
-        # FIXED: Use local method instead of APIKeyManager
         results = self._bulk_validate_and_update(request.user)
         return Response(results)
     
@@ -259,7 +307,6 @@ class APIKeyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def usage_statistics(self, request):
         """Get API key usage statistics"""
-        # FIXED: Use local method instead of APIKeyManager
         stats = self._get_usage_statistics(request.user)
         return Response(stats)
     
@@ -441,7 +488,6 @@ class UserDashboardView(APIView):
             
             # Get API key statistics and health
             api_key_stats = APIKeyService.get_user_api_key_stats(request.user)
-            # FIXED: Use local health check instead of APIKeyManager
             api_key_health = self._get_api_key_health(request.user)
             
             # Get recent API keys

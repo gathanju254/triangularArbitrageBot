@@ -1,1 +1,51 @@
 /* frontend/src/pages/Settings/Settings.css */
+.settings-page {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.settings-header {
+  margin-bottom: 24px;
+}
+
+.settings-subtitle {
+  color: #666;
+  font-size: 16px;
+  margin-top: 8px;
+}
+
+.settings-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.settings-tabs .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+.settings-tabs .ant-tabs-tab {
+  padding: 12px 24px;
+  font-weight: 500;
+}
+
+.settings-tabs .ant-tabs-tab-active {
+  background-color: #1890ff;
+  color: white;
+}
+
+.settings-tabs .ant-tabs-tab-active .anticon {
+  color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 16px;
+  }
+  
+  .settings-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}

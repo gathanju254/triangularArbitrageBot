@@ -2,8 +2,11 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
 import logging
 import time
+import json
 from ..models.trade import BotConfig
 from ..core.order_execution import OrderExecutor
 
@@ -304,3 +307,83 @@ def update_risk_limits(request):
             'error': f'Failed to update risk limits: {str(e)}',
             'timestamp': time.time()
         }, status=400)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_trading_config(request):
+    """Get trading configuration with expanded settings"""
+    try:
+        config, _ = BotConfig.objects.get_or_create(pk=1)
+        
+        config_data = {
+            "auto_trading": config.trading_enabled,
+            "trading_mode": "full-auto" if config.trading_enabled else "manual",
+            "max_concurrent_trades": getattr(config, 'max_concurrent_trades', 3),
+            "min_trade_amount": config.min_trade_amount,
+            "stop_loss_enabled": True,
+            "take_profit_enabled": True,
+            "stop_loss_percent": 2.0,
+            "take_profit_percent": 5.0,
+            "email_notifications": True,
+            "push_notifications": False,
+            "trading_alerts": True,
+            "risk_alerts": True,
+            "slippage_tolerance": config.slippage_tolerance
+        }
+        return JsonResponse(config_data)
+    except Exception as e:
+        logger.error(f"Error fetching trading config: {e}")
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_trading_config(request):
+    """Update trading configuration with validation"""
+    try:
+        data = json.loads(request.body)
+        config, _ = BotConfig.objects.get_or_create(pk=1)
+        
+        # Update fields with validation
+        if 'auto_trading' in data:
+            config.trading_enabled = bool(data['auto_trading'])
+        
+        if 'min_trade_amount' in data:
+            new_min = float(data['min_trade_amount'])
+            if new_min <= 1.0:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Minimum trade amount must be greater than $1"
+                }, status=400)
+            config.min_trade_amount = new_min
+            
+        if 'max_concurrent_trades' in data:
+            config.max_concurrent_trades = int(data['max_concurrent_trades'])
+            
+        if 'slippage_tolerance' in data:
+            config.slippage_tolerance = float(data['slippage_tolerance'])
+        
+        # Save changes
+        config.save()
+        
+        return JsonResponse({
+            "status": "success",
+            "message": "Trading configuration updated successfully",
+            "config": {
+                "auto_trading": config.trading_enabled,
+                "min_trade_amount": config.min_trade_amount,
+                "max_concurrent_trades": config.max_concurrent_trades,
+                "slippage_tolerance": config.slippage_tolerance
+            }
+        })
+        
+    except ValueError as e:
+        return JsonResponse({
+            "status": "error",
+            "message": f"Invalid value provided: {str(e)}"
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error updating trading config: {e}")
+        return JsonResponse({
+            "status": "error",
+            "message": f"Failed to update configuration: {str(e)}"
+        }, status=500)

@@ -1,6 +1,6 @@
 // frontend/src/services/api/settingsService.js
-
 import api from './api';
+import { userService } from './userService';
 
 // Enhanced response handler
 const handleResponse = (response) => {
@@ -56,6 +56,44 @@ const getDevelopmentFallbackData = (operation) => {
           { name: 'kraken', enabled: false, tradingEnabled: false, maxTradeSize: 1000, minProfitThreshold: 0.5 },
           { name: 'huobi', enabled: false, tradingEnabled: false, maxTradeSize: 1000, minProfitThreshold: 0.5 },
         ];
+      case 'trading-config':
+        return {
+          auto_trading: false,
+          trading_mode: 'manual',
+          max_concurrent_trades: 3,
+          stop_loss_enabled: true,
+          take_profit_enabled: true,
+          email_notifications: true,
+          push_notifications: false,
+          trading_alerts: true,
+          risk_alerts: true,
+          min_trade_amount: 10,
+          stop_loss_percent: 2,
+          take_profit_percent: 5
+        };
+      case 'api-keys':
+        return [
+          {
+            id: 1,
+            exchange: 'binance',
+            label: 'Main Binance Account',
+            api_key: 'binance_api_key_123',
+            secret_key: 'binance_secret_456',
+            is_active: true,
+            is_validated: true,
+            created_at: '2024-01-15T10:30:00Z'
+          },
+          {
+            id: 2,
+            exchange: 'kucoin',
+            label: 'KuCoin Trading',
+            api_key: 'kucoin_api_key_789',
+            secret_key: 'kucoin_secret_012',
+            is_active: true,
+            is_validated: false,
+            created_at: '2024-01-20T14:45:00Z'
+          }
+        ];
       default:
         return null;
     }
@@ -64,6 +102,71 @@ const getDevelopmentFallbackData = (operation) => {
 };
 
 export const settingsService = {
+  // =============================================
+  // TRADING CONFIGURATION
+  // =============================================
+
+  async getTradingConfig() {
+    try {
+      console.log('⚙️ Fetching trading configuration...');
+      const response = await api.get('/arbitrage/trading-config/');
+      const data = handleResponse(response);
+      console.log('✅ Trading configuration loaded');
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch trading config:', error);
+      
+      // Return development fallback data first
+      const fallbackData = getDevelopmentFallbackData('trading-config');
+      if (fallbackData) {
+        return fallbackData;
+      }
+      
+      // Fallback to user profile if dedicated endpoint fails
+      try {
+        console.log('🔄 Falling back to user profile for trading config...');
+        const profile = await userService.getUserProfile();
+        const config = profile?.profile?.notification_preferences || {};
+        console.log('✅ Loaded trading config from user profile fallback');
+        return config;
+      } catch (profileError) {
+        console.error('Failed to load trading config from user profile:', profileError);
+        return {};
+      }
+    }
+  },
+
+  async updateTradingConfig(configData) {
+    try {
+      console.log('💾 Saving trading configuration...');
+      const response = await api.put('/arbitrage/trading-config/', configData);
+      const result = handleResponse(response);
+      console.log('✅ Trading configuration saved successfully');
+      return result;
+    } catch (error) {
+      console.error('Failed to save trading config:', error);
+      
+      // Fallback to user profile if dedicated endpoint fails
+      try {
+        console.log('🔄 Falling back to user profile for saving trading config...');
+        const profile = await userService.getUserProfile();
+        const updatedProfile = {
+          ...profile,
+          profile: {
+            ...profile.profile,
+            notification_preferences: configData
+          }
+        };
+        const result = await userService.updateUserProfile(updatedProfile);
+        console.log('✅ Trading configuration saved via user profile fallback');
+        return result;
+      } catch (profileError) {
+        console.error('Failed to save trading config via user profile:', profileError);
+        throw new Error('Failed to save trading configuration');
+      }
+    }
+  },
+
   // =============================================
   // EXCHANGE SETTINGS MANAGEMENT
   // =============================================
@@ -125,10 +228,29 @@ export const settingsService = {
       console.log('🔑 Fetching API keys...');
       const response = await api.get('/settings/api-keys/');
       const data = handleResponse(response);
-      console.log(`✅ Loaded ${Array.isArray(data) ? data.length : 'unknown'} API keys`);
-      return data;
+      
+      // Ensure we always return an array structure
+      if (Array.isArray(data)) {
+        console.log(`✅ Loaded ${data.length} API keys`);
+        return data;
+      } else if (data && Array.isArray(data.api_keys)) {
+        console.log(`✅ Loaded ${data.api_keys.length} API keys`);
+        return data.api_keys;
+      } else {
+        console.warn('Unexpected API keys response structure, returning empty array');
+        return [];
+      }
     } catch (error) {
-      handleError(error, 'fetch API keys');
+      console.error('Failed to fetch API keys:', error);
+      
+      // Return empty array instead of throwing to prevent table errors
+      const fallbackData = getDevelopmentFallbackData('api-keys');
+      if (fallbackData) {
+        return fallbackData;
+      }
+      
+      console.warn('Returning empty array for API keys due to error');
+      return [];
     }
   },
 
@@ -233,34 +355,6 @@ export const settingsService = {
             error.response?.data?.message ||
             `Failed to validate API key for ${exchange}`
         );
-    }
-  },
-
-  // =============================================
-  // TRADING CONFIGURATION
-  // =============================================
-
-  async getTradingConfig() {
-    try {
-      console.log('⚙️ Fetching trading configuration...');
-      const response = await api.get('/settings/trading-config/');
-      const data = handleResponse(response);
-      console.log('✅ Trading configuration loaded');
-      return data;
-    } catch (error) {
-      handleError(error, 'fetch trading config');
-    }
-  },
-
-  async updateTradingConfig(configData) {
-    try {
-      console.log('💾 Saving trading configuration...');
-      const response = await api.put('/settings/trading-config/', configData);
-      const result = handleResponse(response);
-      console.log('✅ Trading configuration saved successfully');
-      return result;
-    } catch (error) {
-      handleError(error, 'update trading config');
     }
   },
 
@@ -458,6 +552,121 @@ export const settingsService = {
       return data;
     } catch (error) {
       handleError(error, 'fetch all balances');
+    }
+  },
+
+  // =============================================
+  // SETTINGS-SPECIFIC METHODS
+  // =============================================
+
+  async getGeneralSettings() {
+    try {
+      console.log('⚙️ Fetching general settings...');
+      const response = await api.get('/settings/general/');
+      const data = handleResponse(response);
+      console.log('✅ General settings loaded');
+      return data;
+    } catch (error) {
+      handleError(error, 'fetch general settings');
+    }
+  },
+
+  async updateGeneralSettings(settingsData) {
+    try {
+      console.log('💾 Updating general settings...');
+      const response = await api.put('/settings/general/', settingsData);
+      const result = handleResponse(response);
+      console.log('✅ General settings updated successfully');
+      return result;
+    } catch (error) {
+      handleError(error, 'update general settings');
+    }
+  },
+
+  async getNotificationSettings() {
+    try {
+      console.log('🔔 Fetching notification settings...');
+      const response = await api.get('/settings/notifications/');
+      const data = handleResponse(response);
+      console.log('✅ Notification settings loaded');
+      return data;
+    } catch (error) {
+      handleError(error, 'fetch notification settings');
+    }
+  },
+
+  async updateNotificationSettings(settingsData) {
+    try {
+      console.log('💾 Updating notification settings...');
+      const response = await api.put('/settings/notifications/', settingsData);
+      const result = handleResponse(response);
+      console.log('✅ Notification settings updated successfully');
+      return result;
+    } catch (error) {
+      handleError(error, 'update notification settings');
+    }
+  },
+
+  // =============================================
+  // BACKUP & RESTORE SETTINGS
+  // =============================================
+
+  async exportSettings() {
+    try {
+      console.log('📤 Exporting settings...');
+      const response = await api.get('/settings/export/');
+      const data = handleResponse(response);
+      console.log('✅ Settings exported successfully');
+      return data;
+    } catch (error) {
+      handleError(error, 'export settings');
+    }
+  },
+
+  async importSettings(settingsFile) {
+    try {
+      console.log('📥 Importing settings...');
+      const formData = new FormData();
+      formData.append('settings_file', settingsFile);
+      
+      const response = await api.post('/settings/import/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const result = handleResponse(response);
+      console.log('✅ Settings imported successfully');
+      return result;
+    } catch (error) {
+      handleError(error, 'import settings');
+    }
+  },
+
+  // =============================================
+  // RESET & DEFAULT SETTINGS
+  // =============================================
+
+  async resetToDefaults() {
+    try {
+      console.log('🔄 Resetting settings to defaults...');
+      const response = await api.post('/settings/reset-defaults/');
+      const result = handleResponse(response);
+      console.log('✅ Settings reset to defaults successfully');
+      return result;
+    } catch (error) {
+      handleError(error, 'reset settings to defaults');
+    }
+  },
+
+  async getDefaultSettings() {
+    try {
+      console.log('📋 Fetching default settings...');
+      const response = await api.get('/settings/defaults/');
+      const data = handleResponse(response);
+      console.log('✅ Default settings loaded');
+      return data;
+    } catch (error) {
+      handleError(error, 'fetch default settings');
     }
   }
 };

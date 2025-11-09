@@ -6,65 +6,83 @@ export const userService = {
    * ✅ USER AUTH & REGISTRATION
    * ================================ */
   async register(userData) {
-  try {
-    console.log("📝 Attempting registration with data:", {
-      username: userData.username,
-      email: userData.email,
-      hasPassword: !!userData.password
-    });
+    try {
+      console.log("📝 Attempting registration with data:", {
+        username: userData.username,
+        email: userData.email,
+        hasPassword: !!userData.password
+      });
 
-    const response = await api.post("/users/register/", userData);
+      // Convert camelCase to snake_case for Django
+      const formattedData = {
+        username: userData.username,
+        email: userData.email,
+        phone: userData.phone,
+        first_name: userData.firstName,    // Convert to snake_case
+        last_name: userData.lastName,      // Convert to snake_case
+        password: userData.password,
+        password_confirm: userData.confirmPassword  // Convert to snake_case
+      };
 
-    // Store tokens received upon successful registration
-    if (response.data.access) {
-      localStorage.setItem("access_token", response.data.access);
-      localStorage.setItem("refresh_token", response.data.refresh);
-    }
+      console.log("🔄 Sending formatted data to server:", {
+        username: formattedData.username,
+        email: formattedData.email,
+        has_first_name: !!formattedData.first_name,
+        has_last_name: !!formattedData.last_name,
+        has_phone: !!formattedData.phone
+      });
 
-    console.log("✅ Registration successful");
-    return response.data;
-  } catch (error) {
-    console.error("❌ Registration failed:", error);
+      const response = await api.post("/users/register/", formattedData);
 
-    // Enhanced error handling
-    if (error?.response?.status === 400) {
-      const errorData = error.response.data;
-      
-      // Handle different error formats
-      if (errorData.details) {
-        // New format with details object
-        const firstError = Object.values(errorData.details)[0];
-        throw new Error(firstError || "Invalid registration data");
-      } else if (errorData.error) {
-        // Direct error message
-        throw new Error(errorData.error);
-      } else {
-        // Field-specific errors
-        const errorMsg =
-          errorData.username?.[0] ||
-          errorData.email?.[0] ||
-          errorData.password?.[0] ||
-          "Invalid registration data";
-        throw new Error(errorMsg);
+      // Store tokens received upon successful registration
+      if (response.data.access) {
+        localStorage.setItem("access_token", response.data.access);
+        localStorage.setItem("refresh_token", response.data.refresh);
       }
-    } else if (error?.response?.status === 409) {
-      throw new Error("User already exists with this email or username");
-    } else if (error?.response?.status === 404) {
-      throw new Error("Registration endpoint not found");
-    } else if (!error?.response) {
-      throw new Error("Network error - cannot reach server");
-    } else {
-      throw new Error("Registration failed. Please try again.");
+
+      console.log("✅ Registration successful");
+      return response.data;
+    } catch (error) {
+      console.error("❌ Registration failed:", error);
+
+      // Enhanced error handling
+      if (error?.response?.status === 400) {
+        const errorData = error.response.data;
+        
+        // Handle different error formats
+        if (errorData.details) {
+          // New format with details object
+          const firstError = Object.values(errorData.details)[0];
+          throw new Error(firstError || "Invalid registration data");
+        } else if (errorData.error) {
+          // Direct error message
+          throw new Error(errorData.error);
+        } else {
+          // Field-specific errors
+          const errorMsg =
+            errorData.username?.[0] ||
+            errorData.email?.[0] ||
+            errorData.password?.[0] ||
+            "Invalid registration data";
+          throw new Error(errorMsg);
+        }
+      } else if (error?.response?.status === 409) {
+        throw new Error("User already exists with this email or username");
+      } else if (error?.response?.status === 404) {
+        throw new Error("Registration endpoint not found");
+      } else if (!error?.response) {
+        throw new Error("Network error - cannot reach server");
+      } else {
+        throw new Error("Registration failed. Please try again.");
+      }
     }
-  }
-},
+  },
 
   /** ================================
    * ✅ PROFILE
    * ================================ */
   async getUserProfile() {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.get("/users/profile/");
       console.log("✅ User profile loaded");
       return response.data;
@@ -83,7 +101,6 @@ export const userService = {
 
   async updateUserProfile(profileData) {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.put("/users/update_profile/", profileData);
       console.log("✅ Profile updated successfully");
       return response.data;
@@ -106,7 +123,6 @@ export const userService = {
    * ================================ */
   async changePassword(passwordData) {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.put("/users/change-password/", passwordData);
       console.log("✅ Password changed successfully");
       return response.data;
@@ -131,26 +147,43 @@ export const userService = {
   /** ================================
    * ✅ API KEYS MANAGEMENT
    * ================================ */
-  async getApiKeys() {
-    try {
-      // Fixed: Remove duplicate /api/ in the URL
-      const response = await api.get("/users/api-keys/");
-      console.log("✅ API keys loaded");
-      return response.data;
-    } catch (error) {
-      console.error("❌ Failed to fetch API keys:", error);
-
-      if (error.response?.status === 401) {
-        throw new Error("Authentication required");
-      } else {
-        throw new Error("Failed to load API keys");
-      }
+  // frontend/src/services/api/userService.js
+async getApiKeys() {
+  try {
+    const response = await api.get("/users/api-keys/");
+    console.log("✅ API keys loaded:", response.data);
+    
+    // Handle different response structures
+    if (response.data && Array.isArray(response.data.api_keys)) {
+      return { api_keys: response.data.api_keys };
+    } else if (Array.isArray(response.data)) {
+      return { api_keys: response.data };
+    } else if (response.data && response.data.api_keys === undefined) {
+      // If api_keys key doesn't exist but we have data, wrap it
+      return { api_keys: [response.data] };
+    } else {
+      console.warn("Unexpected API keys response structure:", response.data);
+      return { api_keys: [] };
     }
-  },
+  } catch (error) {
+    console.error("❌ Failed to fetch API keys:", error);
+    
+    if (error.response?.status === 401) {
+      throw new Error("Authentication required");
+    } else if (error.response?.status === 404) {
+      // If endpoint not found, return empty array
+      console.warn("API keys endpoint not found, returning empty array");
+      return { api_keys: [] };
+    } else {
+      // For other errors, return empty array instead of throwing
+      console.error("API keys fetch failed, returning empty array:", error.message);
+      return { api_keys: [] };
+    }
+  }
+},
 
   async addApiKey(apiKeyData) {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.post("/users/api-keys/", apiKeyData);
       console.log("✅ API key added successfully");
       return response.data;
@@ -169,7 +202,6 @@ export const userService = {
 
   async updateApiKey(id, apiKeyData) {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.put(`/users/api-keys/${id}/`, apiKeyData);
       console.log("✅ API key updated successfully");
       return response.data;
@@ -188,7 +220,6 @@ export const userService = {
 
   async deleteApiKey(id) {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       await api.delete(`/users/api-keys/${id}/`);
       console.log("✅ API key deleted successfully");
     } catch (error) {
@@ -267,7 +298,6 @@ export const userService = {
    * ================================ */
   async getUserPreferences() {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.get("/users/preferences/");
       console.log("✅ User preferences loaded");
       return response.data;
@@ -279,7 +309,6 @@ export const userService = {
 
   async updateUserPreferences(preferencesData) {
     try {
-      // Fixed: Remove duplicate /api/ in the URL
       const response = await api.put("/users/preferences/", preferencesData);
       console.log("✅ User preferences updated");
       return response.data;

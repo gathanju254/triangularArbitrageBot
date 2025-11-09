@@ -1,6 +1,7 @@
 # backend/apps/arbitrage_bot/views/api_views.py
 from datetime import datetime
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -496,3 +497,60 @@ def reset_system(request):
             'error': f'System reset failed: {str(e)}',
             'timestamp': time.time()
         }, status=500)
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def trading_config(request):
+    """Get or update trading configuration"""
+    try:
+        if request.method == 'GET':
+            # Get or create bot config
+            config, created = BotConfig.objects.get_or_create(pk=1)
+            
+            return Response({
+                'auto_trading': config.trading_enabled,
+                'trading_mode': 'full-auto' if config.trading_enabled else 'manual',
+                'max_concurrent_trades': config.max_concurrent_trades or 3,
+                'min_trade_amount': config.min_trade_amount or 10.0,
+                'stop_loss_enabled': True,  # Default values
+                'take_profit_enabled': True,
+                'stop_loss_percent': 2.0,
+                'take_profit_percent': 5.0,
+                'email_notifications': True,
+                'push_notifications': False,
+                'trading_alerts': True,
+                'risk_alerts': True,
+                'slippage_tolerance': config.slippage_tolerance or 0.1,
+                'enabled_exchanges': config.enabled_exchanges_list,
+            })
+            
+        elif request.method == 'PUT':
+            data = request.data
+            config, created = BotConfig.objects.get_or_create(pk=1)
+            
+            # Update config with form data
+            if 'auto_trading' in data:
+                config.trading_enabled = data['auto_trading']
+            if 'min_trade_amount' in data:
+                config.min_trade_amount = float(data['min_trade_amount'])
+            if 'max_concurrent_trades' in data:
+                config.max_concurrent_trades = int(data['max_concurrent_trades'])
+            if 'slippage_tolerance' in data:
+                config.slippage_tolerance = float(data['slippage_tolerance'])
+            
+            config.save()
+            
+            return Response({
+                'message': 'Trading configuration updated successfully',
+                'config': {
+                    'auto_trading': config.trading_enabled,
+                    'min_trade_amount': config.min_trade_amount,
+                    'max_concurrent_trades': config.max_concurrent_trades,
+                    'slippage_tolerance': config.slippage_tolerance,
+                }
+            })
+            
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=400)
