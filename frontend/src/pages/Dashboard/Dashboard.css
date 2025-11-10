@@ -1,11 +1,11 @@
 /* frontend/src/pages/Dashboard/Dashboard.css */
-/* =========================================
-   DASHBOARD PAGE (Merged + Optimized)
-   ========================================= */
+/* Dashboard Page Specific Styles - Isolated to avoid conflicts */
 
 /* Layout */
 .dashboard-page {
-  padding: 0;
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 }
 
 .dashboard-header {
@@ -20,14 +20,18 @@
   align-items: center;
 }
 
-/* Refresh indicator spin next to subtitle */
-.dashboard-subtitle .ant-spin {
+.dashboard-refresh-indicator {
   margin-left: 8px;
+  color: #1890ff;
+  font-weight: 500;
 }
 
-/* ============================================================
-   Loading State (used before dashboard renders or during refresh)
-   ============================================================ */
+/* Alert Styles */
+.dashboard-alert {
+  margin-bottom: 16px;
+}
+
+/* Loading State */
 .dashboard-loading {
   display: flex;
   justify-content: center;
@@ -35,86 +39,142 @@
   min-height: 400px;
   flex-direction: column;
   gap: 16px;
+  padding: 24px;
 }
 
-/* Additional spinner style (Card loading icon) */
-.ant-card-extra .loading-spinner {
-  display: inline-flex;
-  align-items: center;
+/* Main Content Grid */
+.dashboard-main-content {
+  margin-top: 24px;
 }
 
-/* ============================================================
-   Stats Cards (shared with StatsCards component)
-   ============================================================ */
-.stats-grid {
-  margin-bottom: 0;
-}
-
-.stat-card {
+/* Card Styles */
+.dashboard-chart-card,
+.dashboard-opportunities-card,
+.dashboard-quick-actions-card,
+.dashboard-status-card,
+.dashboard-activity-card {
   border-radius: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
-  border: none;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  height: 100%;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.stat-card .ant-card-body {
+.dashboard-chart-card .ant-card-body,
+.dashboard-opportunities-card .ant-card-body,
+.dashboard-quick-actions-card .ant-card-body,
+.dashboard-status-card .ant-card-body,
+.dashboard-activity-card .ant-card-body {
   padding: 20px;
 }
 
-.stat-content {
+/* Card Titles */
+.dashboard-card-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 24px;
   font-weight: 600;
-  margin-bottom: 4px;
 }
 
-.stat-label {
+.dashboard-card-icon {
+  margin-right: 8px;
+  color: #1890ff;
+}
+
+.dashboard-card-loader {
+  margin-left: 8px;
+}
+
+/* Card Descriptions */
+.dashboard-card-description {
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Actions Row */
+.dashboard-actions-row {
+  margin-top: 24px;
+}
+
+/* Quick Actions Card */
+.dashboard-quick-actions-card .ant-card-actions > li {
+  margin: 8px 0;
+  border: none;
+}
+
+.dashboard-action-item {
+  cursor: pointer;
+  color: #1890ff;
+  font-weight: 500;
+  transition: color 0.3s;
+  display: block;
+  padding: 8px 0;
+}
+
+.dashboard-action-item:hover {
+  color: #40a9ff;
+}
+
+/* Status Card */
+.dashboard-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dashboard-status-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-status-label {
   color: #666;
   font-size: 14px;
-  margin-bottom: 8px;
 }
 
-.stat-trend {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
+.dashboard-status-value {
   font-weight: 500;
+  font-size: 14px;
 }
 
-.trend-up {
+.dashboard-status-connected {
   color: #52c41a;
 }
 
-.trend-down {
+.dashboard-status-disconnected {
   color: #ff4d4f;
 }
 
-.stat-icon {
-  font-size: 48px;
-  opacity: 0.8;
-  margin-left: 16px;
+/* Activity Card */
+.dashboard-activity-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-/* ============================================================
-   Status Indicators (Real-time updates)
-   ============================================================ */
-.status-indicator {
+.dashboard-activity-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-activity-type {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #262626;
+}
+
+.dashboard-activity-time {
+  color: #666;
+  font-size: 12px;
+}
+
+/* Status Indicator Animation */
+@keyframes dashboard-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.dashboard-status-indicator {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -122,115 +182,153 @@
   color: #52c41a;
 }
 
-.status-indicator.pulse::before {
+.dashboard-status-indicator-pulse::before {
   content: '';
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #52c41a;
-  animation: pulse 1.5s infinite;
+  animation: dashboard-pulse 1.5s infinite;
 }
 
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.4; }
-  100% { opacity: 1; }
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-main-content .ant-col-lg-16,
+  .dashboard-main-content .ant-col-lg-8 {
+    margin-bottom: 16px;
+  }
 }
 
-/* ============================================================
-   Status Card (connection, feed, update timestamp)
-   ============================================================ */
-.status-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.status-item:last-child {
-  border-bottom: none;
-}
-
-.status-label {
-  color: #666;
-  font-size: 14px;
-}
-
-.status-value {
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.status-value.connected {
-  color: #52c41a;
-}
-
-.status-value.disconnected {
-  color: #ff4d4f;
-}
-
-/* ============================================================
-   Recent Activity Card
-   ============================================================ */
-.activity-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.activity-item:last-child {
-  border-bottom: none;
-}
-
-.activity-type {
-  font-weight: 500;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.activity-time {
-  color: #666;
-  font-size: 12px;
-}
-
-/* ============================================================
-   Quick Actions Card
-   ============================================================ */
-.quick-actions-card .ant-card-actions > li {
-  margin: 8px 0;
-}
-
-.quick-actions-card .ant-card-actions > li > span {
-  cursor: pointer;
-  color: #1890ff;
-  font-weight: 500;
-  transition: color 0.3s;
-}
-
-.quick-actions-card .ant-card-actions > li > span:hover {
-  color: #40a9ff;
-}
-
-/* ============================================================
-   Responsive Design
-   ============================================================ */
 @media (max-width: 768px) {
+  .dashboard-page {
+    padding: 16px;
+  }
+
   .dashboard-header {
     text-align: center;
+    margin-bottom: 16px;
   }
 
-  .stat-content {
+  .dashboard-subtitle {
     flex-direction: column;
+    gap: 8px;
     text-align: center;
   }
 
-  .stat-icon {
+  .dashboard-refresh-indicator {
     margin-left: 0;
-    margin-top: 12px;
-    font-size: 36px;
   }
 
-  .stat-value {
-    font-size: 20px;
+  .dashboard-actions-row .ant-col-md-8 {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-chart-card .ant-card-body,
+  .dashboard-opportunities-card .ant-card-body,
+  .dashboard-quick-actions-card .ant-card-body,
+  .dashboard-status-card .ant-card-body,
+  .dashboard-activity-card .ant-card-body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-card-title {
+    font-size: 14px;
+  }
+
+  .dashboard-status-item,
+  .dashboard-activity-item {
+    padding: 8px 0;
+  }
+
+  .dashboard-status-label,
+  .dashboard-status-value,
+  .dashboard-activity-type {
+    font-size: 13px;
+  }
+
+  .dashboard-activity-time {
+    font-size: 11px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .dashboard-page {
+    background-color: #141414;
+  }
+
+  .dashboard-chart-card,
+  .dashboard-opportunities-card,
+  .dashboard-quick-actions-card,
+  .dashboard-status-card,
+  .dashboard-activity-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .dashboard-card-description,
+  .dashboard-status-label,
+  .dashboard-activity-time {
+    color: #8c8c8c;
+  }
+
+  .dashboard-activity-type {
+    color: #e6e6e6;
+  }
+
+  .dashboard-status-item,
+  .dashboard-activity-item {
+    border-bottom-color: #303030;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .dashboard-page {
+    background: white;
+    padding: 0;
+  }
+
+  .dashboard-chart-card,
+  .dashboard-opportunities-card,
+  .dashboard-quick-actions-card,
+  .dashboard-status-card,
+  .dashboard-activity-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+
+  .dashboard-refresh-indicator {
+    display: none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .dashboard-chart-card,
+  .dashboard-opportunities-card,
+  .dashboard-quick-actions-card,
+  .dashboard-status-card,
+  .dashboard-activity-card {
+    border: 2px solid #000;
+  }
+
+  .dashboard-status-item,
+  .dashboard-activity-item {
+    border-bottom: 2px solid #000;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-status-indicator-pulse::before {
+    animation: none;
+  }
+
+  .dashboard-action-item {
+    transition: none;
   }
 }

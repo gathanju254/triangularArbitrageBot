@@ -1,9 +1,0 @@
-/*frontend/src/components/trading/ManualTrade/ManualTrade.css*/
-.manual-trade {
-  background: white;
-  border-radius: 8px;
-}
-
-.manual-trade .ant-form-item {
-  margin-bottom: 16px;
-}

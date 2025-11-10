@@ -1,1 +1,348 @@
-/*frontend/src/pages/Trading/Trading.css*/
+/* frontend/src/pages/Trading/Trading.css */
+/* Trading Page Specific Styles - Isolated to avoid conflicts */
+
+.trading-page {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* Header Section */
+.trading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.trading-header-content {
+  flex: 1;
+  min-width: 300px;
+}
+
+.trading-subtitle {
+  color: #666;
+  font-size: 16px;
+  margin-top: 8px;
+}
+
+.trading-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trading-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+/* Statistics Row */
+.trading-stats-row {
+  margin-bottom: 24px;
+}
+
+.trading-stat-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.trading-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Alert Styling */
+.trading-alert {
+  margin-bottom: 24px;
+  border-radius: 8px;
+}
+
+/* Main Trading Card */
+.trading-main-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+/* Tabs Styling */
+.trading-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+  padding: 0 24px;
+  background: #fafafa;
+}
+
+.trading-tabs .ant-tabs-tab {
+  padding: 16px 24px;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+}
+
+.trading-tabs .ant-tabs-tab-active {
+  background: white;
+  border-bottom-color: #1890ff;
+}
+
+.trading-tabs .ant-tabs-content {
+  padding: 24px;
+}
+
+/* Tab Content */
+.trading-tab-content {
+  min-height: 400px;
+}
+
+/* Card Variants */
+.trading-interface-card,
+.market-data-card,
+.strategy-config-card,
+.performance-metrics-card,
+.charting-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  height: 100%;
+}
+
+/* Coming Soon Placeholders */
+.coming-soon-placeholder {
+  text-align: center;
+  padding: 60px 20px;
+  color: #8c8c8c;
+}
+
+.coming-soon-placeholder.large {
+  padding: 100px 20px;
+}
+
+.coming-soon-placeholder .ant-typography {
+  color: #8c8c8c;
+}
+
+/* Quick Actions */
+.quick-actions-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+}
+
+.action-card {
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.action-card:hover {
+  border-color: #1890ff;
+  transform: translateY(-2px);
+}
+
+.action-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.action-icon {
+  font-size: 24px;
+  color: #1890ff;
+}
+
+.action-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.action-description {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .trading-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .trading-controls {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .trading-page {
+    padding: 16px;
+  }
+  
+  .trading-tabs .ant-tabs-nav {
+    padding: 0 16px;
+  }
+  
+  .trading-tabs .ant-tabs-content {
+    padding: 16px;
+  }
+  
+  .trading-tabs .ant-tabs-tab {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .coming-soon-placeholder {
+    padding: 40px 16px;
+  }
+  
+  .coming-soon-placeholder.large {
+    padding: 60px 16px;
+  }
+  
+  .action-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .action-text {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .trading-status {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .trading-stats-row .ant-col {
+    margin-bottom: 8px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .trading-page {
+    background-color: #141414;
+  }
+  
+  .trading-stat-card,
+  .trading-main-card,
+  .quick-actions-card,
+  .trading-interface-card,
+  .market-data-card,
+  .strategy-config-card,
+  .performance-metrics-card,
+  .charting-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .trading-status {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .trading-tabs .ant-tabs-nav {
+    background: #141414;
+  }
+  
+  .trading-tabs .ant-tabs-tab-active {
+    background: #1f1f1f;
+  }
+  
+  .action-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+}
+
+/* Animation for active trading */
+@keyframes trading-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(24, 144, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(24, 144, 255, 0); }
+}
+
+.trading-stat-card.active-trading {
+  animation: trading-pulse 2s infinite;
+}
+
+/* Print Styles */
+@media print {
+  .trading-page {
+    background: white;
+    padding: 0;
+  }
+  
+  .trading-controls,
+  .quick-actions-card {
+    display: none;
+  }
+  
+  .trading-stat-card,
+  .trading-main-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .trading-stat-card,
+  .trading-main-card,
+  .quick-actions-card {
+    border: 2px solid #000;
+  }
+  
+  .action-card:hover {
+    border: 2px solid #1890ff;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .trading-stat-card,
+  .action-card {
+    transition: none;
+  }
+  
+  .trading-stat-card:hover,
+  .action-card:hover {
+    transform: none;
+  }
+  
+  .trading-stat-card.active-trading {
+    animation: none;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.trading-tabs .ant-tabs-tab:focus,
+.action-card:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* RTL Language Support */
+[dir="rtl"] .action-content {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .action-text {
+  align-items: flex-end;
+}

@@ -1,12 +1,12 @@
-// frontend/src/pages/Settings/Settings.jsx
+// frontend/src/pages/Settings/Settings.jsx - Enhanced Version
 import React, { useState } from 'react';
-import { Tabs, Card, Typography, Alert } from 'antd';
+import { Tabs, Card, Typography, Alert, Spin } from 'antd';
 import { 
   SettingOutlined, 
   KeyOutlined, 
   SafetyOutlined,
-  SwapOutlined, // Use SwapOutlined instead of ExchangeOutlined
-  BankOutlined   // Alternative option
+  SwapOutlined,
+  BankOutlined
 } from '@ant-design/icons';
 import ApiKeys from '../../components/settings/ApiKeys/ApiKeys';
 import ExchangeSettings from '../../components/settings/ExchangeSettings/ExchangeSettings';
@@ -19,6 +19,7 @@ const { TabPane } = Tabs;
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('api-keys');
   const [settingsChanged, setSettingsChanged] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleTabChange = (key) => {
     if (settingsChanged) {
@@ -33,6 +34,20 @@ const Settings = () => {
 
   const handleSettingsChange = (changed) => {
     setSettingsChanged(changed);
+  };
+
+  // Simulate loading state (you can replace this with actual loading logic)
+  const simulateLoading = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  };
+
+  const handleTabClick = (key) => {
+    if (key !== activeTab) {
+      simulateLoading();
+    }
   };
 
   return (
@@ -51,53 +66,70 @@ const Settings = () => {
           type="warning"
           showIcon
           closable
+          className="settings-alert"
           style={{ marginBottom: 16 }}
         />
       )}
 
-      <Card className="settings-card">
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          type="card"
-          className="settings-tabs"
-        >
-          <TabPane
-            tab={
-              <span>
-                <KeyOutlined />
-                API Keys
-              </span>
-            }
-            key="api-keys"
+      <Card 
+        className="settings-card"
+        loading={loading}
+      >
+        {loading ? (
+          <div className="settings-loading">
+            <Spin size="large" tip="Loading settings..." />
+          </div>
+        ) : (
+          <Tabs
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            onTabClick={handleTabClick}
+            type="card"
+            className="settings-tabs"
           >
-            <ApiKeys onSettingsChange={handleSettingsChange} />
-          </TabPane>
+            <TabPane
+              tab={
+                <span className="settings-tab-label">
+                  <KeyOutlined />
+                  API Keys
+                </span>
+              }
+              key="api-keys"
+            >
+              <div className="settings-tab-content">
+                <ApiKeys onSettingsChange={handleSettingsChange} />
+              </div>
+            </TabPane>
 
-          <TabPane
-            tab={
-              <span>
-                <SwapOutlined /> {/* Changed from ExchangeOutlined to SwapOutlined */}
-                Exchange Settings
-              </span>
-            }
-            key="exchange-settings"
-          >
-            <ExchangeSettings onSettingsChange={handleSettingsChange} />
-          </TabPane>
+            <TabPane
+              tab={
+                <span className="settings-tab-label">
+                  <SwapOutlined />
+                  Exchange Settings
+                </span>
+              }
+              key="exchange-settings"
+            >
+              <div className="settings-tab-content">
+                <ExchangeSettings onSettingsChange={handleSettingsChange} />
+              </div>
+            </TabPane>
 
-          <TabPane
-            tab={
-              <span>
-                <SafetyOutlined />
-                Trading Configuration
-              </span>
-            }
-            key="trading-config"
-          >
-            <TradingConfig onSettingsChange={handleSettingsChange} />
-          </TabPane>
-        </Tabs>
+            <TabPane
+              tab={
+                <span className="settings-tab-label">
+                  <SafetyOutlined />
+                  Trading Configuration
+                </span>
+              }
+              key="trading-config"
+            >
+              <div className="settings-tab-content">
+                <TradingConfig onSettingsChange={handleSettingsChange} />
+              </div>
+            </TabPane>
+          </Tabs>
+        )}
       </Card>
     </div>
   );

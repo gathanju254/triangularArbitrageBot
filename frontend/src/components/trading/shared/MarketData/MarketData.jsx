@@ -1,282 +1,384 @@
-// frontend/src/components/trading/TradeHistory/TradeHistory.jsx
+// frontend/src/components/trading/shared/MarketData/MarketData.jsx
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Space, Alert, Button } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
-import { tradingService } from '../../../services/api/tradingService';
-import './TradeHistory.css';
+import {
+  Card,
+  Table,
+  Tag,
+  Typography,
+  Input,
+  Select,
+  Row,
+  Col,
+  Statistic,
+  Progress,
+  Tooltip,
+  Space,
+  Badge
+} from 'antd';
+import {
+  RiseOutlined,
+  FallOutlined,
+  LineChartOutlined,
+  DollarOutlined,
+  SearchOutlined,
+  StarOutlined,
+  EyeOutlined
+} from '@ant-design/icons';
+import './MarketData.css';
 
-const TradeHistory = () => {
-  const [trades, setTrades] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const { Title, Text } = Typography;
+const { Option } = Select;
+const { Search } = Input;
+
+const MarketData = () => {
+  const [marketData, setMarketData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [selectedExchange, setSelectedExchange] = useState('all');
+  const [watchlist, setWatchlist] = useState(new Set(['BTCUSDT', 'ETHUSDT']));
+
+  // Mock market data
+  const initialMarketData = [
+    {
+      key: '1',
+      symbol: 'BTCUSDT',
+      name: 'Bitcoin',
+      price: 43250.75,
+      change: 2.45,
+      changePercent: 2.45,
+      volume: 2856341200,
+      high: 43500.00,
+      low: 42800.50,
+      exchange: 'binance',
+      sparkline: [43000, 43100, 43200, 43150, 43250]
+    },
+    {
+      key: '2',
+      symbol: 'ETHUSDT',
+      name: 'Ethereum',
+      price: 2580.30,
+      change: -1.23,
+      changePercent: -1.23,
+      volume: 1456321800,
+      high: 2620.00,
+      low: 2560.50,
+      exchange: 'binance',
+      sparkline: [2600, 2590, 2580, 2570, 2580]
+    },
+    {
+      key: '3',
+      symbol: 'SOLUSDT',
+      name: 'Solana',
+      price: 98.45,
+      change: 5.67,
+      changePercent: 5.67,
+      volume: 856321400,
+      high: 99.00,
+      low: 92.50,
+      exchange: 'kraken',
+      sparkline: [93, 94, 95, 96, 98]
+    },
+    {
+      key: '4',
+      symbol: 'ADAUSDT',
+      name: 'Cardano',
+      price: 0.52,
+      change: -0.89,
+      changePercent: -0.89,
+      volume: 356214700,
+      high: 0.53,
+      low: 0.51,
+      exchange: 'coinbase',
+      sparkline: [0.53, 0.525, 0.52, 0.515, 0.52]
+    },
+    {
+      key: '5',
+      symbol: 'DOTUSDT',
+      name: 'Polkadot',
+      price: 7.23,
+      change: 1.34,
+      changePercent: 1.34,
+      volume: 256398100,
+      high: 7.30,
+      low: 7.10,
+      exchange: 'okx',
+      sparkline: [7.15, 7.18, 7.20, 7.22, 7.23]
+    }
+  ];
 
   useEffect(() => {
-    loadTradeHistory();
+    setMarketData(initialMarketData);
+    setFilteredData(initialMarketData);
   }, []);
 
-  const loadTradeHistory = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const history = await tradingService.getTradeHistory();
-      
-      // Ensure we have a proper array
-      let tradeData = [];
-      
-      if (Array.isArray(history)) {
-        tradeData = history;
-      } else if (history && Array.isArray(history.results)) {
-        // Handle paginated response
-        tradeData = history.results;
-      } else if (history && Array.isArray(history.data)) {
-        // Handle data property
-        tradeData = history.data;
-      } else if (history && typeof history === 'object') {
-        // Handle object response - extract array from it
-        const possibleArrayKeys = ['data', 'trades', 'orders', 'items', 'results'];
-        for (const key of possibleArrayKeys) {
-          if (Array.isArray(history[key])) {
-            tradeData = history[key];
-            break;
-          }
-        }
-        
-        // If no array found but object has values, try to use it as single item
-        if (tradeData.length === 0 && Object.keys(history).length > 0) {
-          tradeData = [history];
-        }
-      }
-      
-      // Ensure each item has a unique key and required fields
-      const processedTrades = tradeData.map((trade, index) => ({
-        ...trade,
-        key: trade.id || trade.order_id || `trade-${index}`,
-        // Ensure all required fields exist with fallbacks
-        timestamp: trade.timestamp || trade.created_at || trade.executed_at || new Date().toISOString(),
-        symbol: trade.symbol || 'N/A',
-        side: trade.side || 'buy',
-        amount: trade.amount || trade.filled_amount || '0',
-        price: trade.price || trade.average_price || '0',
-        profit: trade.profit || trade.actual_profit || '0',
-        status: trade.status || 'completed'
-      }));
-      
-      setTrades(processedTrades);
-      
-    } catch (error) {
-      console.error('Failed to load trade history:', error);
-      setError(error.message || 'Failed to load trade history');
-      setTrades([]); // Ensure empty array on error
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    filterData();
+  }, [searchText, selectedExchange, marketData]);
+
+  const filterData = () => {
+    let filtered = marketData;
+
+    if (searchText) {
+      filtered = filtered.filter(item =>
+        item.symbol.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.name.toLowerCase().includes(searchText.toLowerCase())
+      );
     }
+
+    if (selectedExchange !== 'all') {
+      filtered = filtered.filter(item => item.exchange === selectedExchange);
+    }
+
+    setFilteredData(filtered);
   };
 
-  const handleRetry = () => {
-    loadTradeHistory();
+  const toggleWatchlist = (symbol) => {
+    const newWatchlist = new Set(watchlist);
+    if (newWatchlist.has(symbol)) {
+      newWatchlist.delete(symbol);
+    } else {
+      newWatchlist.add(symbol);
+    }
+    setWatchlist(newWatchlist);
+  };
+
+  const formatVolume = (volume) => {
+    if (volume >= 1000000000) {
+      return `$${(volume / 1000000000).toFixed(2)}B`;
+    }
+    if (volume >= 1000000) {
+      return `$${(volume / 1000000).toFixed(2)}M`;
+    }
+    return `$${(volume / 1000).toFixed(2)}K`;
   };
 
   const columns = [
     {
-      title: 'Date',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      render: (timestamp) => {
-        if (!timestamp) return 'N/A';
-        try {
-          return new Date(timestamp).toLocaleString();
-        } catch {
-          return 'Invalid Date';
-        }
-      },
-      width: 180,
-      sorter: (a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0),
-    },
-    {
-      title: 'Symbol',
+      title: 'Pair',
       dataIndex: 'symbol',
       key: 'symbol',
-      width: 100,
-      render: (symbol) => symbol || 'N/A',
-      filters: [
-        { text: 'BTC/USDT', value: 'BTC/USDT' },
-        { text: 'ETH/USDT', value: 'ETH/USDT' },
-        { text: 'ADA/USDT', value: 'ADA/USDT' },
-      ],
-      onFilter: (value, record) => record.symbol === value,
-    },
-    {
-      title: 'Side',
-      dataIndex: 'side',
-      key: 'side',
-      render: (side) => (
-        <Tag color={side === 'buy' ? 'green' : side === 'sell' ? 'red' : 'default'}>
-          {(side || 'buy').toUpperCase()}
-        </Tag>
+      fixed: 'left',
+      render: (symbol, record) => (
+        <Space>
+          <Tooltip title={watchlist.has(symbol) ? 'Remove from watchlist' : 'Add to watchlist'}>
+            <StarOutlined 
+              className={`watchlist-icon ${watchlist.has(symbol) ? 'active' : ''}`}
+              onClick={() => toggleWatchlist(symbol)}
+            />
+          </Tooltip>
+          <div className="symbol-info">
+            <Text strong>{symbol}</Text>
+            <div className="asset-name">{record.name}</div>
+          </div>
+        </Space>
       ),
-      width: 80,
-      filters: [
-        { text: 'BUY', value: 'buy' },
-        { text: 'SELL', value: 'sell' },
-      ],
-      onFilter: (value, record) => record.side === value,
-    },
-    {
-      title: 'Amount',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount) => {
-        try {
-          return parseFloat(amount || 0).toFixed(8);
-        } catch {
-          return '0.00000000';
-        }
-      },
-      width: 120,
-      sorter: (a, b) => parseFloat(a.amount || 0) - parseFloat(b.amount || 0),
     },
     {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price) => {
-        try {
-          return `$${parseFloat(price || 0).toFixed(2)}`;
-        } catch {
-          return '$0.00';
-        }
-      },
-      width: 100,
-      sorter: (a, b) => parseFloat(a.price || 0) - parseFloat(b.price || 0),
+      render: (price, record) => (
+        <Space direction="vertical" size={0}>
+          <Text strong className="price-value">
+            ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </Text>
+          <div className="price-change">
+            {record.change >= 0 ? (
+              <RiseOutlined className="price-up" />
+            ) : (
+              <FallOutlined className="price-down" />
+            )}
+            <Text className={record.change >= 0 ? 'price-up' : 'price-down'}>
+              {record.change >= 0 ? '+' : ''}{record.change}%
+            </Text>
+          </div>
+        </Space>
+      ),
+      sorter: (a, b) => a.price - b.price,
     },
     {
-      title: 'Profit/Loss',
-      dataIndex: 'profit',
-      key: 'profit',
-      render: (profit) => {
-        try {
-          const profitNum = parseFloat(profit || 0);
-          return (
-            <span style={{ 
-              color: profitNum >= 0 ? '#3f8600' : '#cf1322',
-              fontWeight: profitNum !== 0 ? '500' : 'normal'
-            }}>
-              ${Math.abs(profitNum).toFixed(2)}
-              {profitNum !== 0 && (
-                <span style={{ fontSize: '12px', marginLeft: '4px' }}>
-                  {profitNum >= 0 ? '↑' : '↓'}
-                </span>
-              )}
-            </span>
-          );
-        } catch {
-          return <span style={{ color: '#cf1322' }}>$0.00</span>;
-        }
-      },
-      width: 120,
-      sorter: (a, b) => parseFloat(a.profit || 0) - parseFloat(b.profit || 0),
+      title: '24h Change',
+      dataIndex: 'changePercent',
+      key: 'changePercent',
+      render: (changePercent) => (
+        <Tag color={changePercent >= 0 ? 'green' : 'red'}>
+          {changePercent >= 0 ? '+' : ''}{changePercent}%
+        </Tag>
+      ),
+      sorter: (a, b) => a.changePercent - b.changePercent,
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const statusColor = {
-          'completed': 'green',
-          'filled': 'green',
-          'pending': 'orange',
-          'open': 'blue',
-          'cancelled': 'gray',
-          'failed': 'red',
-          'partial': 'purple'
-        };
-        
-        return (
-          <Tag color={statusColor[status] || 'default'}>
-            {(status || 'unknown').toUpperCase()}
-          </Tag>
-        );
-      },
-      width: 100,
-      filters: [
-        { text: 'COMPLETED', value: 'completed' },
-        { text: 'PENDING', value: 'pending' },
-        { text: 'FAILED', value: 'failed' },
-        { text: 'CANCELLED', value: 'cancelled' },
-      ],
-      onFilter: (value, record) => record.status === value,
+      title: '24h Volume',
+      dataIndex: 'volume',
+      key: 'volume',
+      render: (volume) => (
+        <Text>{formatVolume(volume)}</Text>
+      ),
+      sorter: (a, b) => a.volume - b.volume,
+    },
+    {
+      title: '24h High/Low',
+      key: 'highLow',
+      render: (record) => (
+        <Space direction="vertical" size={0}>
+          <Text type="secondary" className="high-low-text">
+            H: ${record.high.toLocaleString()}
+          </Text>
+          <Text type="secondary" className="high-low-text">
+            L: ${record.low.toLocaleString()}
+          </Text>
+        </Space>
+      ),
     },
     {
       title: 'Exchange',
-      dataIndex: ['exchange', 'name'],
+      dataIndex: 'exchange',
       key: 'exchange',
-      width: 100,
-      render: (exchangeName) => exchangeName || 'N/A',
+      render: (exchange) => (
+        <Tag color="blue" className="exchange-tag">
+          {exchange.toUpperCase()}
+        </Tag>
+      ),
       filters: [
         { text: 'Binance', value: 'binance' },
-        { text: 'KuCoin', value: 'kucoin' },
+        { text: 'Kraken', value: 'kraken' },
         { text: 'Coinbase', value: 'coinbase' },
+        { text: 'OKX', value: 'okx' },
       ],
-      onFilter: (value, record) => record.exchange?.name === value,
+      onFilter: (value, record) => record.exchange === value,
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
+      render: (record) => (
+        <Space>
+          <Tooltip title="View Details">
+            <EyeOutlined className="action-icon" />
+          </Tooltip>
+          <Tooltip title="Trade">
+            <DollarOutlined className="action-icon trade-icon" />
+          </Tooltip>
+        </Space>
+      ),
     },
   ];
 
-  return (
-    <div className="trade-history">
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Trade History</h2>
-        <Button 
-          icon={<ReloadOutlined />} 
-          onClick={handleRetry}
-          loading={loading}
-        >
-          Refresh
-        </Button>
-      </div>
+  const marketStats = {
+    totalMarketCap: 1650000000000,
+    totalVolume: 85632000000,
+    btcDominance: 42.5,
+    activeCurrencies: 12560
+  };
 
-      {error && (
-        <Alert
-          message="Error Loading Trade History"
-          description={
-            <div>
-              <p>{error}</p>
-              <Button type="primary" size="small" onClick={handleRetry}>
-                Try Again
-              </Button>
-            </div>
-          }
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-          closable
-          onClose={() => setError(null)}
+  return (
+    <div className="market-data">
+      {/* Market Overview */}
+      <Row gutter={[16, 16]} className="market-overview">
+        <Col xs={24} sm={6}>
+          <Card className="market-stat-card">
+            <Statistic
+              title="Total Market Cap"
+              value={marketStats.totalMarketCap}
+              formatter={value => `$${(value / 1000000000000).toFixed(2)}T`}
+              prefix={<DollarOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={6}>
+          <Card className="market-stat-card">
+            <Statistic
+              title="24h Volume"
+              value={marketStats.totalVolume}
+              formatter={value => `$${(value / 1000000000).toFixed(2)}B`}
+              prefix={<LineChartOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={6}>
+          <Card className="market-stat-card">
+            <Statistic
+              title="BTC Dominance"
+              value={marketStats.btcDominance}
+              suffix="%"
+              valueStyle={{ color: '#faad14' }}
+            />
+            <Progress 
+              percent={marketStats.btcDominance} 
+              showInfo={false}
+              strokeColor="#faad14"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={6}>
+          <Card className="market-stat-card">
+            <Statistic
+              title="Active Currencies"
+              value={marketStats.activeCurrencies}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Market Data Table */}
+      <Card 
+        title={
+          <Space>
+            <LineChartOutlined />
+            Real-time Market Data
+          </Space>
+        }
+        className="market-data-table-card"
+        extra={
+          <Space>
+            <Search
+              placeholder="Search pairs..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 200 }}
+              prefix={<SearchOutlined />}
+            />
+            <Select
+              value={selectedExchange}
+              onChange={setSelectedExchange}
+              style={{ width: 120 }}
+              placeholder="Exchange"
+            >
+              <Option value="all">All Exchanges</Option>
+              <Option value="binance">Binance</Option>
+              <Option value="kraken">Kraken</Option>
+              <Option value="coinbase">Coinbase</Option>
+              <Option value="okx">OKX</Option>
+            </Select>
+          </Space>
+        }
+      >
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          pagination={false}
+          scroll={{ x: 800 }}
+          size="small"
+          className="market-data-table"
+          rowClassName={(record) => watchlist.has(record.symbol) ? 'watchlist-row' : ''}
         />
-      )}
-      
-      <Table
-        columns={columns}
-        dataSource={trades}
-        rowKey="key"
-        loading={loading}
-        pagination={{ 
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) => 
-            `${range[0]}-${range[1]} of ${total} trades`,
-          pageSizeOptions: ['10', '20', '50', '100']
-        }}
-        scroll={{ x: 1000 }}
-        size="middle"
-        locale={{
-          emptyText: loading ? 'Loading trades...' : 'No trade history found'
-        }}
-        onChange={(pagination, filters, sorter) => {
-          console.log('Table changed:', { pagination, filters, sorter });
-        }}
-      />
+        
+        <div className="market-data-footer">
+          <Text type="secondary">
+            Showing {filteredData.length} of {marketData.length} trading pairs
+          </Text>
+          <Badge 
+            status="processing" 
+            text="Live Data" 
+            className="live-badge"
+          />
+        </div>
+      </Card>
     </div>
   );
 };
 
-export default TradeHistory;
+export default MarketData;

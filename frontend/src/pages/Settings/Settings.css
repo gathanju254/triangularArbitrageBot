@@ -1,4 +1,6 @@
 /* frontend/src/pages/Settings/Settings.css */
+/* Settings Page Specific Styles - Isolated to avoid conflicts */
+
 .settings-page {
   padding: 24px;
   background-color: #f5f5f5;
@@ -18,6 +20,15 @@
 .settings-card {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  border: 1px solid #f0f0f0;
+}
+
+/* Add this to your existing Settings.css */
+.settings-tab-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .settings-tabs .ant-tabs-nav {
@@ -27,18 +38,137 @@
 .settings-tabs .ant-tabs-tab {
   padding: 12px 24px;
   font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.settings-tabs .ant-tabs-tab:hover {
+  color: #1890ff;
+  border-color: #d9d9d9;
 }
 
 .settings-tabs .ant-tabs-tab-active {
   background-color: #1890ff;
   color: white;
+  border-color: #1890ff;
 }
 
 .settings-tabs .ant-tabs-tab-active .anticon {
   color: white;
 }
 
+.settings-tabs .ant-tabs-content-holder {
+  padding: 0;
+}
+
+.settings-tabs .ant-tabs-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Alert styles for settings page */
+.settings-alert {
+  margin-bottom: 16px;
+  border-radius: 6px;
+}
+
+.settings-alert .ant-alert-message {
+  font-weight: 600;
+}
+
+/* Tab content styling */
+.settings-tab-content {
+  min-height: 400px;
+  padding: 0;
+}
+
+/* Loading states */
+.settings-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Form sections within settings */
+.settings-form-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.settings-form-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-form-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Action buttons in settings */
+.settings-action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Success/error messages */
+.settings-message-success {
+  border-left: 4px solid #52c41a;
+  background-color: #f6ffed;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+}
+
+.settings-message-error {
+  border-left: 4px solid #ff4d4f;
+  background-color: #fff2f0;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+}
+
+/* Card variations for different settings sections */
+.settings-section-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.settings-section-card:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.settings-section-card .ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+}
+
 /* Responsive design */
+@media (max-width: 1200px) {
+  .settings-page {
+    padding: 20px;
+  }
+}
+
 @media (max-width: 768px) {
   .settings-page {
     padding: 16px;
@@ -48,4 +178,162 @@
     padding: 8px 16px;
     font-size: 14px;
   }
+  
+  .settings-action-buttons {
+    flex-direction: column;
+  }
+  
+  .settings-action-buttons .ant-btn {
+    width: 100%;
+  }
+  
+  .settings-form-section {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-page {
+    padding: 12px;
+  }
+  
+  .settings-tabs .ant-tabs-nav-wrap {
+    flex-direction: column;
+  }
+  
+  .settings-tabs .ant-tabs-tab {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .settings-form-section {
+    padding: 12px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .settings-page {
+    background-color: #141414;
+  }
+  
+  .settings-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .settings-form-section {
+    background-color: #262626;
+    border-color: #303030;
+  }
+  
+  .settings-section-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .settings-section-card .ant-card-head {
+    background: #262626;
+    border-bottom-color: #303030;
+  }
+  
+  .settings-section-card .ant-card-head-title {
+    color: #e6e6e6;
+  }
+  
+  .settings-form-section-title {
+    color: #e6e6e6;
+  }
+  
+  .settings-tabs .ant-tabs-tab {
+    background: #262626;
+    border-color: #303030;
+    color: #e6e6e6;
+  }
+  
+  .settings-tabs .ant-tabs-tab:hover {
+    color: #1890ff;
+    border-color: #1890ff;
+  }
+  
+  .settings-tabs .ant-tabs-content {
+    color: #e6e6e6;
+  }
+}
+
+/* Print styles */
+@media print {
+  .settings-page {
+    background: white;
+    padding: 0;
+  }
+  
+  .settings-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .settings-tabs .ant-tabs-nav {
+    display: none;
+  }
+  
+  .settings-action-buttons {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .settings-card {
+    border: 2px solid #000;
+  }
+  
+  .settings-form-section {
+    border: 1px solid #000;
+  }
+  
+  .settings-section-card {
+    border: 2px solid #000;
+  }
+  
+  .settings-tabs .ant-tabs-tab {
+    border: 1px solid #000;
+  }
+  
+  .settings-tabs .ant-tabs-tab-active {
+    border: 2px solid #1890ff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .settings-tabs .ant-tabs-tab {
+    transition: none;
+  }
+}
+
+/* Focus styles for accessibility */
+.settings-tabs .ant-tabs-tab:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.settings-action-buttons .ant-btn:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* RTL (Right-to-Left) language support */
+[dir="rtl"] .settings-tabs .ant-tabs-tab-btn {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .settings-form-section-title {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .settings-message-success,
+[dir="rtl"] .settings-message-error {
+  border-left: none;
+  border-right: 4px solid;
 }

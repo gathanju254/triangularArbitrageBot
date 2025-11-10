@@ -1,2 +1,2 @@
-/// frontend/src/components/trading/TradeHistory/index.js
-export { default } from './TradeHistory'
+/// frontend/src/components/trading/shared/TradingViewer/index.js
+export { default } from './TradingViewer';

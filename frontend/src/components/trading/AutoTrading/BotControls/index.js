@@ -1,2 +1,2 @@
-/// frontend/src/components/trading/AutoTrading/index.js
-export { default } from './AutoTrading'
+/// frontend/src/components/trading/AutoTrading/BotControls/index.js
+export { default } from './BotControls';

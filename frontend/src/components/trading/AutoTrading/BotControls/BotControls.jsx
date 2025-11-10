@@ -1,245 +1,287 @@
-// frontend/src/components/trading/AutoTrading/AutoTrading.jsx
+// frontend/src/components/trading/AutoTrading/BotControls/BotControls.jsx
 import React, { useState, useEffect } from 'react';
-import { Card, Switch, Slider, InputNumber, Row, Col, Statistic, Alert, message } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons';
-import { tradingService } from '../../../services/api/tradingService';
-import './AutoTrading.css';
+import {
+  Card,
+  Button,
+  Space,
+  Statistic,
+  Row,
+  Col,
+  Tag,
+  Alert,
+  Progress,
+  Switch,
+  Tooltip,
+  Modal
+} from 'antd';
+import {
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  StopOutlined,
+  SettingOutlined,
+  RocketOutlined,
+  DollarOutlined,
+  SafetyOutlined,
+  InfoCircleOutlined
+} from '@ant-design/icons';
+import './BotControls.css';
 
-const AutoTrading = () => {
-  const [isActive, setIsActive] = useState(false);
-  const [minProfit, setMinProfit] = useState(0.5);
-  const [maxTradeSize, setMaxTradeSize] = useState(1000);
-  const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [lastAction, setLastAction] = useState(null);
+const BotControls = ({ onStatusChange, initialStatus = 'stopped' }) => {
+  const [botStatus, setBotStatus] = useState(initialStatus);
+  const [uptime, setUptime] = useState(0);
+  const [isEmergencyModalVisible, setIsEmergencyModalVisible] = useState(false);
 
-  // Load initial auto trading status on component mount
+  // Mock bot statistics
+  const [botStats, setBotStats] = useState({
+    tradesExecuted: 0,
+    currentProfit: 0,
+    successRate: 0,
+    activeStrategies: 0
+  });
+
   useEffect(() => {
-    const loadAutoTradingStatus = async () => {
-      try {
-        const status = await tradingService.getAutoTradingStatus();
-        setIsActive(status.active);
-        if (status.settings) {
-          setMinProfit(status.settings.min_profit_threshold || 0.5);
-          setMaxTradeSize(status.settings.max_trade_size || 1000);
-        }
-        // Load stats if active
-        if (status.active && status.activity) {
-          setStats(status.activity);
-        }
-      } catch (error) {
-        console.error('Failed to load auto trading status:', error);
-        message.error('Failed to load auto trading status');
-      }
-    };
-
-    loadAutoTradingStatus();
-  }, []);
-
-  const toggleAutoTrading = async (checked) => {
-    setLoading(true);
-    setLastAction(checked ? 'start' : 'stop');
-    
-    try {
-      let result;
-      if (checked) {
-        // Start auto trading with simplified data
-        result = await tradingService.startAutoTrading({ 
-          min_profit_threshold: minProfit, 
-          max_trade_size: maxTradeSize
-        });
-      } else {
-        // Stop auto trading  
-        result = await tradingService.stopAutoTrading();
-      }
-      
-      if (result.success || result.auto_trading !== undefined) {
-        setIsActive(checked);
-        message.success(`Auto trading ${checked ? 'started' : 'stopped'} successfully`);
-        
-        // Refresh status to get updated stats
-        const status = await tradingService.getAutoTradingStatus();
-        if (status.activity) {
-          setStats(status.activity);
-        }
-      } else {
-        throw new Error(result.message || `Failed to ${checked ? 'start' : 'stop'} auto trading`);
-      }
-    } catch (error) {
-      console.error('Auto trading operation failed:', error);
-      // Revert state on error
-      setIsActive(!checked);
-      message.error(`Auto trading operation failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-      setLastAction(null);
+    let interval;
+    if (botStatus === 'running') {
+      interval = setInterval(() => {
+        setUptime(prev => prev + 1);
+      }, 1000);
     }
+    return () => clearInterval(interval);
+  }, [botStatus]);
+
+  const handleStart = () => {
+    setBotStatus('running');
+    onStatusChange?.('running');
   };
 
-  // Separate effect for updating settings when auto trading is active
-  useEffect(() => {
-    const updateSettings = async () => {
-      if (isActive && lastAction !== 'stop') {
-        try {
-          await tradingService.startAutoTrading({ 
-            min_profit_threshold: minProfit, 
-            max_trade_size: maxTradeSize
-          });
-          console.log('Auto trading settings updated');
-        } catch (error) {
-          console.error('Failed to update auto trading settings:', error);
-        }
-      }
-    };
+  const handlePause = () => {
+    setBotStatus('paused');
+    onStatusChange?.('paused');
+  };
 
-    // Debounce settings updates to avoid too many API calls
-    const timeoutId = setTimeout(updateSettings, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [minProfit, maxTradeSize, isActive, lastAction]);
+  const handleStop = () => {
+    setIsEmergencyModalVisible(true);
+  };
+
+  const confirmStop = () => {
+    setBotStatus('stopped');
+    setUptime(0);
+    onStatusChange?.('stopped');
+    setIsEmergencyModalVisible(false);
+  };
+
+  const formatUptime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getStatusConfig = (status) => {
+    const configs = {
+      running: { color: 'green', text: 'Running', icon: <PlayCircleOutlined /> },
+      paused: { color: 'orange', text: 'Paused', icon: <PauseCircleOutlined /> },
+      stopped: { color: 'red', text: 'Stopped', icon: <StopOutlined /> }
+    };
+    return configs[status] || configs.stopped;
+  };
+
+  const statusConfig = getStatusConfig(botStatus);
 
   return (
-    <Card title="Auto Trading" className="auto-trading" loading={loading}>
-      <Alert
-        message="Auto Trading Mode"
-        description="Automatically execute profitable arbitrage opportunities based on your settings."
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-      />
-
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={12}>
-          <Statistic
-            title="Auto Trading Status"
-            value={isActive ? 'Active' : 'Inactive'}
-            valueStyle={{ 
-              color: isActive ? '#3f8600' : '#cf1322',
-              fontWeight: 'bold'
-            }}
-          />
-        </Col>
-        <Col span={12}>
-          <div style={{ textAlign: 'right' }}>
-            <Switch
-              checkedChildren={<PlayCircleOutlined />}
-              unCheckedChildren={<PauseCircleOutlined />}
-              checked={isActive}
-              onChange={toggleAutoTrading}
-              size="default"
-              loading={loading}
-              style={{ 
-                transform: 'scale(1.2)',
-                marginTop: '8px'
-              }}
-            />
-          </div>
-        </Col>
-      </Row>
-
-      <div className="settings-section">
-        <h4>Trading Settings</h4>
-        
-        <div className="setting-item">
-          <label>Minimum Profit Threshold (%)</label>
-          <Slider
-            min={0.1}
-            max={5}
-            step={0.1}
-            value={minProfit}
-            onChange={setMinProfit}
-            tooltip={{ 
-              formatter: (value) => `${value}%`,
-              placement: 'bottom'
-            }}
-            disabled={!isActive || loading}
-          />
-          <InputNumber
-            min={0.1}
-            max={5}
-            step={0.1}
-            value={minProfit}
-            onChange={setMinProfit}
-            formatter={value => `${value}%`}
-            parser={value => value.replace('%', '')}
-            style={{ width: '100%', marginTop: 8 }}
-            disabled={!isActive || loading}
-          />
-        </div>
-
-        <div className="setting-item">
-          <label>Maximum Trade Size (USD)</label>
-          <Slider
-            min={100}
-            max={10000}
-            step={100}
-            value={maxTradeSize}
-            onChange={setMaxTradeSize}
-            tooltip={{ 
-              formatter: (value) => `$${value.toLocaleString()}`,
-              placement: 'bottom'
-            }}
-            disabled={!isActive || loading}
-          />
-          <InputNumber
-            min={100}
-            max={10000}
-            step={100}
-            value={maxTradeSize}
-            onChange={setMaxTradeSize}
-            formatter={value => `$${value.toLocaleString()}`}
-            parser={value => value.replace(/\$\s?|(,*)/g, '')}
-            style={{ width: '100%', marginTop: 8 }}
-            disabled={!isActive || loading}
-          />
-        </div>
-
-        {!isActive && (
+    <div className="bot-controls">
+      <Card 
+        title={
+          <Space>
+            <RocketOutlined />
+            Bot Controls
+            <Tag color={statusConfig.color} icon={statusConfig.icon}>
+              {statusConfig.text}
+            </Tag>
+          </Space>
+        }
+        className="bot-controls-card"
+        extra={
+          <Tooltip title="Bot Settings">
+            <Button type="text" icon={<SettingOutlined />} />
+          </Tooltip>
+        }
+      >
+        {/* Status Alert */}
+        {botStatus === 'running' && (
           <Alert
-            message="Settings disabled"
-            description="Auto trading must be active to modify settings. Turn on auto trading to adjust these values."
-            type="warning"
+            message="Bot is actively trading"
+            description="Monitor performance and be prepared to intervene if necessary."
+            type="success"
             showIcon
-            style={{ marginTop: 16 }}
+            closable
+            className="bot-status-alert"
           />
         )}
-      </div>
 
-      {isActive && (
-        <div className="activity-section" style={{ marginTop: 24 }}>
-          <h4>Current Activity</h4>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Statistic
-                title="Trades Today"
-                value={stats.trades_today || 0}
-                valueStyle={{ color: '#1890ff' }}
-              />
+        {botStatus === 'paused' && (
+          <Alert
+            message="Trading is paused"
+            description="No new trades will be executed until resumed."
+            type="warning"
+            showIcon
+            closable
+            className="bot-status-alert"
+          />
+        )}
+
+        {/* Control Buttons */}
+        <div className="control-buttons">
+          <Space size="middle">
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              onClick={handleStart}
+              disabled={botStatus === 'running'}
+              className="start-button"
+            >
+              Start
+            </Button>
+            <Button
+              icon={<PauseCircleOutlined />}
+              onClick={handlePause}
+              disabled={botStatus !== 'running'}
+              className="pause-button"
+            >
+              Pause
+            </Button>
+            <Button
+              danger
+              icon={<StopOutlined />}
+              onClick={handleStop}
+              disabled={botStatus === 'stopped'}
+              className="stop-button"
+            >
+              Emergency Stop
+            </Button>
+          </Space>
+        </div>
+
+        {/* Bot Statistics */}
+        <Row gutter={[16, 16]} className="bot-stats">
+          <Col xs={12} sm={6}>
+            <Statistic
+              title="Uptime"
+              value={formatUptime(uptime)}
+              prefix={<InfoCircleOutlined />}
+              className="bot-stat"
+            />
+          </Col>
+          <Col xs={12} sm={6}>
+            <Statistic
+              title="Trades Executed"
+              value={botStats.tradesExecuted}
+              prefix={<DollarOutlined />}
+              className="bot-stat"
+            />
+          </Col>
+          <Col xs={12} sm={6}>
+            <Statistic
+              title="Success Rate"
+              value={botStats.successRate}
+              suffix="%"
+              prefix={<SafetyOutlined />}
+              className="bot-stat"
+            />
+          </Col>
+          <Col xs={12} sm={6}>
+            <Statistic
+              title="Active Strategies"
+              value={botStats.activeStrategies}
+              prefix={<RocketOutlined />}
+              className="bot-stat"
+            />
+          </Col>
+        </Row>
+
+        {/* Performance Progress */}
+        <div className="performance-section">
+          <div className="performance-header">
+            <span>Performance Metrics</span>
+            <Tag color="blue">Live</Tag>
+          </div>
+          <div className="progress-bars">
+            <div className="progress-item">
+              <span>Strategy Efficiency</span>
+              <Progress percent={75} size="small" status="active" />
+            </div>
+            <div className="progress-item">
+              <span>Risk Management</span>
+              <Progress percent={90} size="small" status="active" />
+            </div>
+            <div className="progress-item">
+              <span>Market Adaptation</span>
+              <Progress percent={60} size="small" status="active" />
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Settings */}
+        <div className="quick-settings">
+          <div className="settings-header">
+            <span>Quick Settings</span>
+          </div>
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <div className="setting-item">
+                <span>Auto Restart</span>
+                <Switch size="small" defaultChecked />
+              </div>
             </Col>
-            <Col span={8}>
-              <Statistic
-                title="Daily P&L"
-                value={stats.daily_pnl || 0}
-                precision={2}
-                prefix="$"
-                valueStyle={{ 
-                  color: (stats.daily_pnl || 0) >= 0 ? '#3f8600' : '#cf1322' 
-                }}
-              />
+            <Col span={12}>
+              <div className="setting-item">
+                <span>Risk Limits</span>
+                <Switch size="small" defaultChecked />
+              </div>
             </Col>
-            <Col span={8}>
-              <Statistic
-                title="Status"
-                value={stats.trading_enabled ? 'Enabled' : 'Disabled'}
-                valueStyle={{ 
-                  color: stats.trading_enabled ? '#3f8600' : '#cf1322' 
-                }}
-              />
+            <Col span={12}>
+              <div className="setting-item">
+                <span>Email Alerts</span>
+                <Switch size="small" defaultChecked />
+              </div>
+            </Col>
+            <Col span={12}>
+              <div className="setting-item">
+                <span>API Monitoring</span>
+                <Switch size="small" defaultChecked />
+              </div>
             </Col>
           </Row>
         </div>
-      )}
-    </Card>
+      </Card>
+
+      {/* Emergency Stop Modal */}
+      <Modal
+        title="Emergency Stop Confirmation"
+        open={isEmergencyModalVisible}
+        onOk={confirmStop}
+        onCancel={() => setIsEmergencyModalVisible(false)}
+        okText="Stop Bot"
+        cancelText="Cancel"
+        okType="danger"
+      >
+        <Alert
+          message="Warning: Emergency Stop"
+          description="This will immediately stop all trading activities and close any open positions. This action cannot be undone."
+          type="error"
+          showIcon
+        />
+        <div style={{ marginTop: 16 }}>
+          <p><strong>Are you sure you want to stop the trading bot?</strong></p>
+          <ul>
+            <li>All active strategies will be terminated</li>
+            <li>Open positions may be closed at market prices</li>
+            <li>Bot statistics will be reset</li>
+          </ul>
+        </div>
+      </Modal>
+    </div>
   );
 };
 
-export default AutoTrading;
+export default BotControls;

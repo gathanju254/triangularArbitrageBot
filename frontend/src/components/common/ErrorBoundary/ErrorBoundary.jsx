@@ -18,14 +18,15 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
+    // Fixed: Removed this.classifyError since static methods can't access instance methods
     return { 
       hasError: true, 
-      error,
-      errorType: this.classifyError(error)
+      error
     };
   }
 
-  static classifyError(error) {
+  // Made this an instance method
+  classifyError(error) {
     if (!error) return 'unknown';
     
     const errorMessage = error.toString();
@@ -51,7 +52,7 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
     
-    const errorType = ErrorBoundary.classifyError(error);
+    const errorType = this.classifyError(error);
     
     this.setState({ 
       errorInfo,
@@ -60,9 +61,6 @@ class ErrorBoundary extends React.Component {
     
     // Handle specific error types
     this.handleSpecificErrors(error, errorType);
-    
-    // You could also send this to an error reporting service
-    // this.logErrorToService(error, errorInfo, errorType);
   }
 
   handleSpecificErrors(error, errorType) {
@@ -118,22 +116,6 @@ class ErrorBoundary extends React.Component {
     localStorage.removeItem('userData');
     sessionStorage.clear();
     this.handleReset();
-  };
-
-  // Optional: Log errors to external service
-  logErrorToService = (error, errorInfo, errorType) => {
-    // Example: Send to Sentry, LogRocket, etc.
-    const errorData = {
-      error: error.toString(),
-      errorType,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-      userAgent: navigator.userAgent
-    };
-    
-    console.log('Would send to error service:', errorData);
-    // Your error reporting service integration here
   };
 
   getErrorDescription() {

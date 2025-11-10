@@ -1,245 +1,326 @@
-// frontend/src/components/trading/AutoTrading/AutoTrading.jsx
+// frontend/src/components/trading/AutoTrading/PerformanceMetrics/PerformanceMetrics.jsx
 import React, { useState, useEffect } from 'react';
-import { Card, Switch, Slider, InputNumber, Row, Col, Statistic, Alert, message } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons';
-import { tradingService } from '../../../services/api/tradingService';
-import './AutoTrading.css';
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Progress,
+  Table,
+  Tag,
+  Select,
+  DatePicker,
+  Space,
+  Tooltip
+} from 'antd';
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+import {
+  RiseOutlined,
+  FallOutlined,
+  DollarOutlined,
+  TrophyOutlined,
+  SafetyOutlined,
+  BarChartOutlined,
+  CalendarOutlined
+} from '@ant-design/icons';
+import './PerformanceMetrics.css';
 
-const AutoTrading = () => {
-  const [isActive, setIsActive] = useState(false);
-  const [minProfit, setMinProfit] = useState(0.5);
-  const [maxTradeSize, setMaxTradeSize] = useState(1000);
-  const [stats, setStats] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [lastAction, setLastAction] = useState(null);
+const { Option } = Select;
+const { RangePicker } = DatePicker;
 
-  // Load initial auto trading status on component mount
+const PerformanceMetrics = () => {
+  const [timeRange, setTimeRange] = useState('7d');
+  const [performanceData, setPerformanceData] = useState({});
+
+  // Mock performance data
   useEffect(() => {
-    const loadAutoTradingStatus = async () => {
-      try {
-        const status = await tradingService.getAutoTradingStatus();
-        setIsActive(status.active);
-        if (status.settings) {
-          setMinProfit(status.settings.min_profit_threshold || 0.5);
-          setMaxTradeSize(status.settings.max_trade_size || 1000);
-        }
-        // Load stats if active
-        if (status.active && status.activity) {
-          setStats(status.activity);
-        }
-      } catch (error) {
-        console.error('Failed to load auto trading status:', error);
-        message.error('Failed to load auto trading status');
-      }
+    const mockData = {
+      summary: {
+        totalProfit: 1250.75,
+        totalTrades: 45,
+        winRate: 78.5,
+        sharpeRatio: 1.8,
+        maxDrawdown: 8.2,
+        profitFactor: 2.1
+      },
+      dailyPerformance: Array.from({ length: 30 }, (_, i) => ({
+        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        profit: Math.random() * 200 - 50,
+        trades: Math.floor(Math.random() * 10) + 1
+      })),
+      strategyPerformance: [
+        { name: 'Arbitrage', profit: 850, trades: 25, successRate: 85 },
+        { name: 'Mean Reversion', profit: 320, trades: 12, successRate: 72 },
+        { name: 'Momentum', profit: 180, trades: 8, successRate: 65 }
+      ],
+      recentTrades: [
+        { id: 1, pair: 'BTC/USDT', profit: 45.23, timestamp: '2024-01-15 14:30:00', status: 'win' },
+        { id: 2, pair: 'ETH/USDT', profit: -12.50, timestamp: '2024-01-15 13:15:00', status: 'loss' },
+        { id: 3, pair: 'SOL/USDT', profit: 78.91, timestamp: '2024-01-15 12:00:00', status: 'win' },
+        { id: 4, pair: 'ADA/USDT', profit: 23.45, timestamp: '2024-01-15 11:30:00', status: 'win' }
+      ]
     };
+    setPerformanceData(mockData);
+  }, [timeRange]);
 
-    loadAutoTradingStatus();
-  }, []);
-
-  const toggleAutoTrading = async (checked) => {
-    setLoading(true);
-    setLastAction(checked ? 'start' : 'stop');
-    
-    try {
-      let result;
-      if (checked) {
-        // Start auto trading with simplified data
-        result = await tradingService.startAutoTrading({ 
-          min_profit_threshold: minProfit, 
-          max_trade_size: maxTradeSize
-        });
-      } else {
-        // Stop auto trading  
-        result = await tradingService.stopAutoTrading();
-      }
-      
-      if (result.success || result.auto_trading !== undefined) {
-        setIsActive(checked);
-        message.success(`Auto trading ${checked ? 'started' : 'stopped'} successfully`);
-        
-        // Refresh status to get updated stats
-        const status = await tradingService.getAutoTradingStatus();
-        if (status.activity) {
-          setStats(status.activity);
-        }
-      } else {
-        throw new Error(result.message || `Failed to ${checked ? 'start' : 'stop'} auto trading`);
-      }
-    } catch (error) {
-      console.error('Auto trading operation failed:', error);
-      // Revert state on error
-      setIsActive(!checked);
-      message.error(`Auto trading operation failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-      setLastAction(null);
-    }
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
   };
 
-  // Separate effect for updating settings when auto trading is active
-  useEffect(() => {
-    const updateSettings = async () => {
-      if (isActive && lastAction !== 'stop') {
-        try {
-          await tradingService.startAutoTrading({ 
-            min_profit_threshold: minProfit, 
-            max_trade_size: maxTradeSize
-          });
-          console.log('Auto trading settings updated');
-        } catch (error) {
-          console.error('Failed to update auto trading settings:', error);
-        }
-      }
-    };
+  const formatPercentage = (value) => {
+    return `${value.toFixed(1)}%`;
+  };
 
-    // Debounce settings updates to avoid too many API calls
-    const timeoutId = setTimeout(updateSettings, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [minProfit, maxTradeSize, isActive, lastAction]);
+  const summaryMetrics = [
+    {
+      key: 'totalProfit',
+      title: 'Total Profit',
+      value: performanceData.summary?.totalProfit || 0,
+      formatter: formatCurrency,
+      icon: <DollarOutlined />,
+      color: '#52c41a'
+    },
+    {
+      key: 'winRate',
+      title: 'Win Rate',
+      value: performanceData.summary?.winRate || 0,
+      formatter: formatPercentage,
+      icon: <TrophyOutlined />,
+      color: '#1890ff'
+    },
+    {
+      key: 'sharpeRatio',
+      title: 'Sharpe Ratio',
+      value: performanceData.summary?.sharpeRatio || 0,
+      formatter: (value) => value.toFixed(2),
+      icon: <BarChartOutlined />,
+      color: '#faad14'
+    },
+    {
+      key: 'maxDrawdown',
+      title: 'Max Drawdown',
+      value: performanceData.summary?.maxDrawdown || 0,
+      formatter: formatPercentage,
+      icon: <SafetyOutlined />,
+      color: '#ff4d4f'
+    }
+  ];
+
+  const tradeColumns = [
+    {
+      title: 'Trade Pair',
+      dataIndex: 'pair',
+      key: 'pair',
+      render: (text) => <strong>{text}</strong>
+    },
+    {
+      title: 'Profit/Loss',
+      dataIndex: 'profit',
+      key: 'profit',
+      render: (profit) => (
+        <span className={profit >= 0 ? 'profit-positive' : 'profit-negative'}>
+          {formatCurrency(profit)}
+        </span>
+      )
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Tag color={status === 'win' ? 'green' : 'red'}>
+          {status.toUpperCase()}
+        </Tag>
+      )
+    },
+    {
+      title: 'Timestamp',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (text) => new Date(text).toLocaleString()
+    }
+  ];
+
+  const strategyColors = ['#1890ff', '#52c41a', '#faad14', '#722ed1'];
 
   return (
-    <Card title="Auto Trading" className="auto-trading" loading={loading}>
-      <Alert
-        message="Auto Trading Mode"
-        description="Automatically execute profitable arbitrage opportunities based on your settings."
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-      />
+    <div className="performance-metrics">
+      {/* Controls */}
+      <Card className="metrics-controls-card">
+        <div className="metrics-controls">
+          <Space size="middle">
+            <span>Time Range:</span>
+            <Select value={timeRange} onChange={setTimeRange} style={{ width: 120 }}>
+              <Option value="24h">24 Hours</Option>
+              <Option value="7d">7 Days</Option>
+              <Option value="30d">30 Days</Option>
+              <Option value="90d">90 Days</Option>
+            </Select>
+            <RangePicker />
+          </Space>
+        </div>
+      </Card>
 
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={12}>
-          <Statistic
-            title="Auto Trading Status"
-            value={isActive ? 'Active' : 'Inactive'}
-            valueStyle={{ 
-              color: isActive ? '#3f8600' : '#cf1322',
-              fontWeight: 'bold'
-            }}
-          />
+      {/* Summary Metrics */}
+      <Row gutter={[16, 16]} className="summary-metrics">
+        {summaryMetrics.map(metric => (
+          <Col xs={24} sm={12} lg={6} key={metric.key}>
+            <Card className="metric-card">
+              <div className="metric-content">
+                <div className="metric-icon" style={{ color: metric.color }}>
+                  {metric.icon}
+                </div>
+                <div className="metric-info">
+                  <div className="metric-title">{metric.title}</div>
+                  <div className="metric-value" style={{ color: metric.color }}>
+                    {metric.formatter(metric.value)}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Charts Section */}
+      <Row gutter={[16, 16]} className="charts-section">
+        <Col xs={24} lg={16}>
+          <Card title="Profit & Loss Trend" className="chart-card">
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={performanceData.dailyPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <RechartsTooltip 
+                    formatter={(value) => [formatCurrency(value), 'Profit']}
+                  />
+                  <Legend />
+                  <Area 
+                    type="monotone" 
+                    dataKey="profit" 
+                    stroke="#1890ff" 
+                    fill="#1890ff" 
+                    fillOpacity={0.3}
+                    name="Daily Profit"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </Col>
-        <Col span={12}>
-          <div style={{ textAlign: 'right' }}>
-            <Switch
-              checkedChildren={<PlayCircleOutlined />}
-              unCheckedChildren={<PauseCircleOutlined />}
-              checked={isActive}
-              onChange={toggleAutoTrading}
-              size="default"
-              loading={loading}
-              style={{ 
-                transform: 'scale(1.2)',
-                marginTop: '8px'
-              }}
-            />
-          </div>
+        <Col xs={24} lg={8}>
+          <Card title="Strategy Distribution" className="chart-card">
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={performanceData.strategyPerformance}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="profit"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {performanceData.strategyPerformance?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={strategyColors[index % strategyColors.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </Col>
       </Row>
 
-      <div className="settings-section">
-        <h4>Trading Settings</h4>
-        
-        <div className="setting-item">
-          <label>Minimum Profit Threshold (%)</label>
-          <Slider
-            min={0.1}
-            max={5}
-            step={0.1}
-            value={minProfit}
-            onChange={setMinProfit}
-            tooltip={{ 
-              formatter: (value) => `${value}%`,
-              placement: 'bottom'
-            }}
-            disabled={!isActive || loading}
-          />
-          <InputNumber
-            min={0.1}
-            max={5}
-            step={0.1}
-            value={minProfit}
-            onChange={setMinProfit}
-            formatter={value => `${value}%`}
-            parser={value => value.replace('%', '')}
-            style={{ width: '100%', marginTop: 8 }}
-            disabled={!isActive || loading}
-          />
-        </div>
+      {/* Additional Metrics */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card title="Strategy Performance" className="metrics-card">
+            <div className="strategy-performance">
+              {performanceData.strategyPerformance?.map((strategy, index) => (
+                <div key={strategy.name} className="strategy-item">
+                  <div className="strategy-header">
+                    <span className="strategy-name">{strategy.name}</span>
+                    <Tag color={strategyColors[index]}>{formatCurrency(strategy.profit)}</Tag>
+                  </div>
+                  <div className="strategy-details">
+                    <span>Trades: {strategy.trades}</span>
+                    <span>Success: {strategy.successRate}%</span>
+                  </div>
+                  <Progress 
+                    percent={strategy.successRate} 
+                    size="small" 
+                    strokeColor={strategyColors[index]}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="Recent Trades" className="metrics-card">
+            <Table
+              dataSource={performanceData.recentTrades}
+              columns={tradeColumns}
+              pagination={false}
+              size="small"
+              scroll={{ y: 200 }}
+              rowKey="id"
+            />
+          </Card>
+        </Col>
+      </Row>
 
-        <div className="setting-item">
-          <label>Maximum Trade Size (USD)</label>
-          <Slider
-            min={100}
-            max={10000}
-            step={100}
-            value={maxTradeSize}
-            onChange={setMaxTradeSize}
-            tooltip={{ 
-              formatter: (value) => `$${value.toLocaleString()}`,
-              placement: 'bottom'
-            }}
-            disabled={!isActive || loading}
-          />
-          <InputNumber
-            min={100}
-            max={10000}
-            step={100}
-            value={maxTradeSize}
-            onChange={setMaxTradeSize}
-            formatter={value => `$${value.toLocaleString()}`}
-            parser={value => value.replace(/\$\s?|(,*)/g, '')}
-            style={{ width: '100%', marginTop: 8 }}
-            disabled={!isActive || loading}
-          />
-        </div>
-
-        {!isActive && (
-          <Alert
-            message="Settings disabled"
-            description="Auto trading must be active to modify settings. Turn on auto trading to adjust these values."
-            type="warning"
-            showIcon
-            style={{ marginTop: 16 }}
-          />
-        )}
-      </div>
-
-      {isActive && (
-        <div className="activity-section" style={{ marginTop: 24 }}>
-          <h4>Current Activity</h4>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Statistic
-                title="Trades Today"
-                value={stats.trades_today || 0}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Col>
-            <Col span={8}>
-              <Statistic
-                title="Daily P&L"
-                value={stats.daily_pnl || 0}
-                precision={2}
-                prefix="$"
-                valueStyle={{ 
-                  color: (stats.daily_pnl || 0) >= 0 ? '#3f8600' : '#cf1322' 
-                }}
-              />
-            </Col>
-            <Col span={8}>
-              <Statistic
-                title="Status"
-                value={stats.trading_enabled ? 'Enabled' : 'Disabled'}
-                valueStyle={{ 
-                  color: stats.trading_enabled ? '#3f8600' : '#cf1322' 
-                }}
-              />
-            </Col>
-          </Row>
-        </div>
-      )}
-    </Card>
+      {/* Risk Metrics */}
+      <Card title="Risk Analysis" className="risk-metrics-card">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={8}>
+            <div className="risk-metric">
+              <div className="risk-label">Volatility</div>
+              <div className="risk-value">12.5%</div>
+              <Progress percent={45} status="active" />
+            </div>
+          </Col>
+          <Col xs={24} sm={8}>
+            <div className="risk-metric">
+              <div className="risk-label">Value at Risk</div>
+              <div className="risk-value">{formatCurrency(250)}</div>
+              <Progress percent={30} status="active" />
+            </div>
+          </Col>
+          <Col xs={24} sm={8}>
+            <div className="risk-metric">
+              <div className="risk-label">Correlation</div>
+              <div className="risk-value">0.65</div>
+              <Progress percent={65} status="active" />
+            </div>
+          </Col>
+        </Row>
+      </Card>
+    </div>
   );
 };
 
-export default AutoTrading;
+export default PerformanceMetrics;
