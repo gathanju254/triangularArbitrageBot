@@ -1,11 +1,11 @@
-# backend/apps/users/serializers.py
+# backend/apps/users/serializers/serializers.py
 
 import logging
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import User, UserProfile, APIKey
-from .services import APIKeyService
+from ..models import User, UserProfile, APIKey
+from ..services import APIKeyService
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +356,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_api_key_stats(self, obj):
         """Get API key statistics for the user"""
-        from .services import APIKeyService
+        from ..services import APIKeyService
         return APIKeyService.get_user_api_key_stats(obj)
 
 

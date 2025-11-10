@@ -3,15 +3,19 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_datetime
+from datetime import datetime
 import logging
 import time
 import threading
 from ..core.arbitrage_engine import arbitrage_engine
 from ..core.market_data import market_data_manager
 from ..core.order_execution import OrderExecutor
-from ..models.trade import TradeRecord, BotConfig
+from ..models.trade import TradeRecord
 from ..models.arbitrage_opportunity import ArbitrageOpportunityRecord
 from django.db import models
+
+# Import BotConfiguration from the new location
+from apps.users.models.settings import BotConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -89,18 +93,18 @@ class TradingMonitorThread(threading.Thread):
     def update_settings(self):
         """Update settings from database"""
         try:
-            cfg, _ = BotConfig.objects.get_or_create(pk=1)
+            config = BotConfiguration.get_config()
             # use DB config values (fall back to current values)
-            self.profit_threshold = float(getattr(cfg, 'min_profit_threshold', self.profit_threshold))
+            self.profit_threshold = float(getattr(config, 'min_profit_threshold', self.profit_threshold))
             # Use trade_size_fraction from config, fallback to 0.01 (1%)
-            trade_size_fraction = float(getattr(cfg, 'trade_size_fraction', 0.01))
-            self.trade_amount = float(getattr(cfg, 'base_balance', self.trade_amount)) * trade_size_fraction if getattr(cfg, 'base_balance', None) else self.trade_amount
+            trade_size_fraction = float(getattr(config, 'trade_size_fraction', 0.01))
+            self.trade_amount = float(getattr(config, 'base_balance', self.trade_amount)) * trade_size_fraction if getattr(config, 'base_balance', None) else self.trade_amount
 
             # Update risk manager settings
             if hasattr(order_executor, 'risk_manager') and order_executor.risk_manager:
-                order_executor.risk_manager.max_position_size = float(getattr(cfg, 'max_position_size', order_executor.risk_manager.max_position_size))
-                order_executor.risk_manager.max_daily_loss = float(getattr(cfg, 'max_daily_loss', order_executor.risk_manager.max_daily_loss))
-                order_executor.risk_manager.max_drawdown = float(getattr(cfg, 'max_drawdown', order_executor.risk_manager.max_drawdown))
+                order_executor.risk_manager.max_position_size = float(getattr(config, 'max_position_size', order_executor.risk_manager.max_position_size))
+                order_executor.risk_manager.max_daily_loss = float(getattr(config, 'max_daily_loss', order_executor.risk_manager.max_daily_loss))
+                order_executor.risk_manager.max_drawdown = float(getattr(config, 'max_drawdown', order_executor.risk_manager.max_drawdown))
 
         except Exception as e:
             logger.warning(f"Could not update trading monitor settings: {e}")
@@ -221,7 +225,7 @@ def execute_trade(request):
             }, status=400)
         
         # Try to execute trade through order executor
-        if system_running and hasattr(order_executor, 'execute_triangle_trade'):
+        if hasattr(order_executor, 'execute_triangle_trade'):
             trade_result = order_executor.execute_triangle_trade(triangle, amount, exchange)
         else:
             # Simulate trade execution with realistic profit calculation

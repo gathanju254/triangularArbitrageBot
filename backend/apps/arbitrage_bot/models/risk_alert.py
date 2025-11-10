@@ -1,7 +1,5 @@
 # backend/apps/arbitrage_bot/models/risk_alert.py
-
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 class RiskAlert(models.Model):
@@ -12,7 +10,8 @@ class RiskAlert(models.Model):
         ('critical', 'Critical'),
     ]
     
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    # Use string reference instead of get_user_model() to avoid circular imports
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     alert_type = models.CharField(max_length=50)
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='medium')
     message = models.TextField()

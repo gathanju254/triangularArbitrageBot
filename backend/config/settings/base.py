@@ -14,7 +14,10 @@ from datetime import timedelta
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Define project root
+PROJECT_ROOT = BASE_DIR.parent
 
 # Ensure static directory exists
 STATIC_DIR = BASE_DIR / 'static'
@@ -33,19 +36,23 @@ AUTH_USER_MODEL = 'users.User'
 
 # Application definition
 INSTALLED_APPS = [
-    'django.contrib.admin',
+     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third party apps
     'rest_framework',
     'corsheaders',
-    'apps.arbitrage_bot',
-    'apps.users',
-    'apps.notifications',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    
+    # Local apps
+    'apps.users',
+    'apps.arbitrage_bot',
+    'apps.notifications',
 ]
 
 MIDDLEWARE = [

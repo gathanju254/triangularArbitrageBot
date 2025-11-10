@@ -16,13 +16,14 @@ from ..views.trading_views import (
     execute_trade,
     get_trade_history
 )
-from ..views.settings_views import (
+
+# Import settings views from users app
+from apps.users.views.settings_views import (
     get_settings,
     update_settings,
     enable_real_trading,
     disable_real_trading,
-    get_risk_metrics,
-    update_risk_limits
+    get_risk_metrics
 )
 
 urlpatterns = [
@@ -51,11 +52,10 @@ urlpatterns = [
     # Dashboard endpoints
     path('dashboard/overview/', get_opportunities, name='dashboard_overview'),
     
-    # Settings & Risk Management
+    # Settings & Risk Management (now imported from users app)
     path('settings/', get_settings, name='get_settings'),
     path('settings/update/', update_settings, name='update_settings'),
     path('trading/enable_real/', enable_real_trading, name='enable_real_trading'),
     path('trading/disable_real/', disable_real_trading, name='disable_real_trading'),
     path('risk/metrics/', get_risk_metrics, name='get_risk_metrics'),
-    path('risk/update_limits/', update_risk_limits, name='update_risk_limits'),
 ]

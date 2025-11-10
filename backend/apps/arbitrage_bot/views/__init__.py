@@ -4,7 +4,6 @@ from .api_views import *
 from .web_views import *
 from .admin_views import *
 from .trading_views import *
-from .settings_views import *
 from .performance_views import *
 
 # Export all public names from submodules

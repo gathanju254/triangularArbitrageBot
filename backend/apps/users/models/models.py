@@ -1,4 +1,4 @@
-# backend/apps/users/models.py
+# backend/apps/users/models/models.py
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
@@ -13,7 +13,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# backend/apps/users/models.py
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+
 class User(AbstractUser):
+    """Custom User model with additional fields"""
+    
     USER_TYPES = [
         ('admin', 'Administrator'),
         ('trader', 'Trader'),
@@ -27,13 +35,13 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # Add related_name to avoid clashes with auth.User
+    # Fix related_name to avoid clashes
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name='groups',
         blank=True,
         help_text='The groups this user belongs to.',
-        related_name='custom_user_set',  # Changed from default
+        related_name='custom_user_set',
         related_query_name='user',
     )
     user_permissions = models.ManyToManyField(
@@ -41,7 +49,7 @@ class User(AbstractUser):
         verbose_name='user permissions',
         blank=True,
         help_text='Specific permissions for this user.',
-        related_name='custom_user_set',  # Changed from default
+        related_name='custom_user_set',
         related_query_name='user',
     )
     
@@ -52,6 +60,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.user_type})"
+    
 
 class UserProfile(models.Model):
     RISK_TOLERANCE_CHOICES = [

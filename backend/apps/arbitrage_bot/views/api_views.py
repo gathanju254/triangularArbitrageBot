@@ -12,11 +12,14 @@ import threading
 from ..core.arbitrage_engine import arbitrage_engine, ArbitrageEngine
 from ..core.market_data import market_data_manager, MarketDataManager
 from ..core.order_execution import OrderExecutor
-from ..models.trade import TradeRecord, BotConfig
+from ..models.trade import TradeRecord
 from ..models.arbitrage_opportunity import ArbitrageOpportunityRecord
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
 from django.db import models
+
+# Import BotConfiguration from the new location
+from apps.users.models.settings import BotConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +78,15 @@ def initialize_system():
     logger.info(f"System initialization complete:")
     logger.info(f"   - {len(sample_prices)} sample prices loaded") 
     logger.info(f"   - {len(triangles_found)} triangular paths configured")
-    logger.info(f"   - Minimum profit threshold: {arbitrage_engine_instance.min_profit_threshold}%")
+    
+    # Get min profit threshold from BotConfiguration
+    try:
+        config = BotConfiguration.get_config()
+        min_profit_threshold = float(getattr(config, "min_profit_threshold", 0.3))
+    except Exception:
+        min_profit_threshold = 0.3
+    
+    logger.info(f"   - Minimum profit threshold: {min_profit_threshold}%")
     
     # Scan for initial opportunities with sample data
     price_values = {}
@@ -139,8 +150,8 @@ def get_opportunities(request):
 
             # --- ADDED LOGGING FOR PROFIT CALC ---
             try:
-                cfg, _ = BotConfig.objects.get_or_create(pk=1)
-                min_profit_threshold = float(getattr(cfg, "min_profit_threshold", 0.3))
+                config = BotConfiguration.get_config()
+                min_profit_threshold = float(getattr(config, "min_profit_threshold", 0.3))
             except Exception:
                 min_profit_threshold = 0.3
 
@@ -504,53 +515,67 @@ def trading_config(request):
     """Get or update trading configuration"""
     try:
         if request.method == 'GET':
-            # Get or create bot config
-            config, created = BotConfig.objects.get_or_create(pk=1)
+            # Get bot config using the new model
+            config = BotConfiguration.get_config()
             
+            # Return the complete configuration expected by frontend
             return Response({
                 'auto_trading': config.trading_enabled,
                 'trading_mode': 'full-auto' if config.trading_enabled else 'manual',
-                'max_concurrent_trades': config.max_concurrent_trades or 3,
-                'min_trade_amount': config.min_trade_amount or 10.0,
-                'stop_loss_enabled': True,  # Default values
-                'take_profit_enabled': True,
-                'stop_loss_percent': 2.0,
-                'take_profit_percent': 5.0,
-                'email_notifications': True,
-                'push_notifications': False,
-                'trading_alerts': True,
-                'risk_alerts': True,
-                'slippage_tolerance': config.slippage_tolerance or 0.1,
-                'enabled_exchanges': config.enabled_exchanges_list,
+                'base_balance': float(config.base_balance),
+                'trade_size_fraction': float(config.trade_size_fraction),
+                'min_trade_amount': 10.0,  # Default value since it's not in BotConfiguration
+                'stop_loss_enabled': True,  # Default value
+                'take_profit_enabled': True,  # Default value
+                'stop_loss_percent': 2.0,  # Default value
+                'take_profit_percent': 5.0,  # Default value
+                'email_notifications': True,  # Default value
+                'push_notifications': False,  # Default value
+                'trading_alerts': True,  # Default value
+                'risk_alerts': True,  # Default value
+                'slippage_tolerance': 0.1,  # Default value
+                'enabled_exchanges': config.enabled_exchanges if config.enabled_exchanges else ['binance'],
             })
             
         elif request.method == 'PUT':
             data = request.data
-            config, created = BotConfig.objects.get_or_create(pk=1)
+            config = BotConfiguration.get_config()
             
             # Update config with form data
-            if 'auto_trading' in data:
-                config.trading_enabled = data['auto_trading']
-            if 'min_trade_amount' in data:
-                config.min_trade_amount = float(data['min_trade_amount'])
-            if 'max_concurrent_trades' in data:
-                config.max_concurrent_trades = int(data['max_concurrent_trades'])
-            if 'slippage_tolerance' in data:
-                config.slippage_tolerance = float(data['slippage_tolerance'])
+            update_fields = []
             
-            config.save()
+            if 'auto_trading' in data:
+                config.trading_enabled = bool(data['auto_trading'])
+                update_fields.append('trading_enabled')
+                
+            if 'base_balance' in data:
+                config.base_balance = float(data['base_balance'])
+                update_fields.append('base_balance')
+                
+            if 'trade_size_fraction' in data:
+                config.trade_size_fraction = float(data['trade_size_fraction'])
+                update_fields.append('trade_size_fraction')
+            
+            if 'enabled_exchanges' in data:
+                config.enabled_exchanges = data['enabled_exchanges']
+                update_fields.append('enabled_exchanges')
+            
+            # Save only if there are updates
+            if update_fields:
+                config.save()
             
             return Response({
                 'message': 'Trading configuration updated successfully',
                 'config': {
                     'auto_trading': config.trading_enabled,
-                    'min_trade_amount': config.min_trade_amount,
-                    'max_concurrent_trades': config.max_concurrent_trades,
-                    'slippage_tolerance': config.slippage_tolerance,
+                    'base_balance': float(config.base_balance),
+                    'trade_size_fraction': float(config.trade_size_fraction),
+                    'enabled_exchanges': config.enabled_exchanges,
                 }
             })
             
     except Exception as e:
+        logger.error(f"Error in trading_config: {e}")
         return Response({
             'error': str(e)
         }, status=400)

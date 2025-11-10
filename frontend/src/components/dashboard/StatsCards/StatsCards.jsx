@@ -52,7 +52,8 @@ const StatsCards = ({ stats, loading }) => {
       color: '#52c41a',
       trend: currentStats.today_profit > 0 ? 'up' : currentStats.today_profit < 0 ? 'down' : null,
       trendValue: currentStats.today_profit,
-      description: 'Cumulative profit from all trades'
+      description: 'Cumulative profit from all trades',
+      variant: 'profit'
     },
     {
       key: 'total_trades',
@@ -61,7 +62,8 @@ const StatsCards = ({ stats, loading }) => {
       precision: 0,
       icon: <SwapOutlined />,
       color: '#1890ff',
-      description: 'Number of completed trades'
+      description: 'Number of completed trades',
+      variant: 'trades'
     },
     {
       key: 'success_rate',
@@ -71,7 +73,8 @@ const StatsCards = ({ stats, loading }) => {
       suffix: '%',
       icon: <LineChartOutlined />,
       color: '#faad14',
-      description: 'Percentage of profitable trades'
+      description: 'Percentage of profitable trades',
+      variant: 'success'
     },
     {
       key: 'active_opportunities',
@@ -80,7 +83,8 @@ const StatsCards = ({ stats, loading }) => {
       precision: 0,
       icon: <RocketOutlined />,
       color: '#722ed1',
-      description: 'Current arbitrage opportunities detected'
+      description: 'Current arbitrage opportunities detected',
+      variant: 'opportunities'
     }
   ];
 
@@ -88,10 +92,10 @@ const StatsCards = ({ stats, loading }) => {
     if (!trend || value === 0) return null;
     
     const TrendIcon = trend === 'up' ? ArrowUpOutlined : ArrowDownOutlined;
-    const color = trend === 'up' ? '#52c41a' : '#ff4d4f';
+    const trendClass = trend === 'up' ? 'stats-card-trend-up' : 'stats-card-trend-down';
     
     return (
-      <span className={`trend-${trend}`} style={{ fontSize: '12px', marginLeft: 4 }}>
+      <span className={`stats-card-trend ${trendClass}`}>
         <TrendIcon /> ${Math.abs(value).toFixed(2)} today
       </span>
     );
@@ -108,37 +112,54 @@ const StatsCards = ({ stats, loading }) => {
     return `${prefix}${formatted}${suffix}`;
   };
 
+  const getCardVariantClass = (variant) => {
+    switch (variant) {
+      case 'profit':
+        return 'stats-card-profit';
+      case 'trades':
+        return 'stats-card-trades';
+      case 'success':
+        return 'stats-card-success';
+      case 'opportunities':
+        return 'stats-card-opportunities';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <Row gutter={[16, 16]} className="stats-grid">
+    <Row gutter={[16, 16]} className="stats-cards-grid">
       {statCards.map((stat) => (
         <Col xs={24} sm={12} lg={6} key={stat.key}>
           <Card 
-            className={`stat-card ${changedValues[stat.key] ? 'value-changed' : ''}`}
+            className={`stats-card ${getCardVariantClass(stat.variant)} ${
+              changedValues[stat.key] ? 'stats-card-highlighted' : ''
+            }`}
             loading={loading}
           >
-            <div className="stat-content">
-              <div className="stat-info">
-                <div className="stat-header">
-                  <div className="stat-title">
+            <div className="stats-card-content">
+              <div className="stats-card-info">
+                <div className="stats-card-header">
+                  <div className="stats-card-title">
                     {stat.title}
                     {stat.description && (
                       <Tooltip title={stat.description}>
-                        <InfoCircleOutlined className="info-icon" />
+                        <InfoCircleOutlined className="stats-card-info-icon" />
                       </Tooltip>
                     )}
                   </div>
                 </div>
                 <div 
-                  className={`stat-value ${changedValues[stat.key] ? 'changed' : ''}`}
+                  className={`stats-card-value ${changedValues[stat.key] ? 'changed' : ''}`}
                   style={{ color: stat.color }}
                 >
                   {formatValue(stat.value, stat.precision, stat.prefix, stat.suffix)}
                 </div>
-                <div className="stat-footer">
+                <div className="stats-card-footer">
                   {formatTrend(stat.trend, stat.trendValue)}
                 </div>
               </div>
-              <div className="stat-icon" style={{ color: stat.color }}>
+              <div className="stats-card-icon" style={{ color: stat.color }}>
                 {stat.icon}
               </div>
             </div>

@@ -12,9 +12,10 @@ urlpatterns = [
     path('api/', include('apps.arbitrage_bot.urls.api_urls')),  # Also include at root api
     path('admin-tools/', include('apps.arbitrage_bot.urls.admin_urls')),  # Admin tools
     
-    # User URLs
+    # User URLs - Updated to include settings URLs
     path('user-tools/admin/', include('apps.users.urls.admin_urls')),
     path('api/users/', include('apps.users.urls.api_urls')),
+    path('api/settings/', include('apps.users.urls.settings_urls')),  # Add settings URLs
     path('api/auth/', include('apps.users.urls.web_urls')),
     
     # Notification URLs

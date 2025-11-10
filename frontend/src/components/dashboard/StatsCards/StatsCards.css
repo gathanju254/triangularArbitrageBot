@@ -1,15 +1,13 @@
-/*frontend/src/components/dashboard/StatsCards/StatsCards.css*/
-/* ================================
-   StatsCards Styling (Merged Version)
-   ================================ */
+/* frontend/src/components/dashboard/StatsCards/StatsCards.css */
+/* StatsCards Component Specific Styles - Isolated to avoid conflicts */
 
 /* Grid layout */
-.stats-grid {
+.stats-cards-grid {
   margin-bottom: 0;
 }
 
 /* Card container */
-.stat-card {
+.stats-card {
   border-radius: 8px;
   transition: all 0.3s ease;
   height: 100%;
@@ -17,15 +15,16 @@
   border: 1px solid #f0f0f0;
   position: relative;
   overflow: hidden;
+  background: white;
 }
 
 /* Hover effect with highlight animation */
-.stat-card:hover {
+.stats-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.stat-card::before {
+.stats-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -36,143 +35,339 @@
   transition: left 0.5s;
 }
 
-.stat-card:hover::before {
+.stats-card:hover::before {
   left: 100%;
 }
 
-.stat-card .ant-card-body {
+.stats-card .ant-card-body {
   padding: 20px;
+  height: 100%;
 }
 
 /* Structure & Layout */
-.stat-content {
+.stats-card-content {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   padding: 8px 0;
   height: 100%;
+  min-height: 80px;
 }
 
-.stat-info {
+.stats-card-info {
   flex: 1;
+  min-width: 0; /* Prevent flex item from overflowing */
 }
 
 /* Header (title + info tooltip) */
-.stat-header {
+.stats-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
 
-.stat-title {
+.stats-card-title {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
   color: #666;
   font-weight: 500;
+  margin: 0;
 }
 
-.info-icon {
+.stats-card-info-icon {
   color: #999;
   font-size: 12px;
   cursor: help;
+  transition: color 0.2s ease;
+}
+
+.stats-card-info-icon:hover {
+  color: #1890ff;
 }
 
 /* Main Value */
-.stat-value {
+.stats-card-value {
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
   margin-bottom: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Animation when value changes */
-@keyframes pulse {
+@keyframes stats-card-pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
 
-.stat-value.changed {
-  animation: pulse 0.5s ease-in-out;
+.stats-card-value.changed {
+  animation: stats-card-pulse 0.5s ease-in-out;
 }
 
 /* Footer (trend indicator) */
-.stat-footer {
+.stats-card-footer {
   margin-top: 4px;
   min-height: 18px;
+  display: flex;
+  align-items: center;
 }
 
-/* Trend colors */
-.trend-up {
+/* Trend styles */
+.stats-card-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(82, 196, 26, 0.1);
+}
+
+.stats-card-trend-up {
   color: #52c41a;
+  background: rgba(82, 196, 26, 0.1);
 }
 
-.trend-down {
+.stats-card-trend-down {
   color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
+}
+
+.stats-card-trend-neutral {
+  color: #faad14;
+  background: rgba(250, 173, 20, 0.1);
 }
 
 /* Enhanced highlight animation */
-@keyframes highlight {
-  0% { background-color: rgba(24, 144, 255, 0.1); }
-  100% { background-color: transparent; }
+@keyframes stats-card-highlight {
+  0% { 
+    background-color: rgba(24, 144, 255, 0.1);
+    border-color: #1890ff;
+  }
+  100% { 
+    background-color: transparent;
+    border-color: #f0f0f0;
+  }
 }
 
-.value-changed {
-  border-color: #1890ff;
-  animation: highlight 1s ease-in-out;
+.stats-card-highlighted {
+  animation: stats-card-highlight 1s ease-in-out;
 }
 
 /* Icon styling */
-.stat-icon {
+.stats-card-icon {
   font-size: 48px;
   opacity: 0.8;
   margin-left: 16px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.stats-card:hover .stats-card-icon {
+  transform: scale(1.1);
+}
+
+/* Loading state enhancements */
+.stats-card .ant-card-body .ant-skeleton {
+  padding: 0;
+}
+
+.stats-card .ant-skeleton-input {
+  height: 24px;
+  margin-bottom: 8px;
+}
+
+.stats-card .ant-skeleton-paragraph {
+  margin-bottom: 0;
+}
+
+/* Color variants for different stat types */
+.stats-card-profit {
+  border-left: 4px solid #52c41a;
+}
+
+.stats-card-trades {
+  border-left: 4px solid #1890ff;
+}
+
+.stats-card-success {
+  border-left: 4px solid #faad14;
+}
+
+.stats-card-opportunities {
+  border-left: 4px solid #722ed1;
 }
 
 /* Responsive layout */
+@media (max-width: 1200px) {
+  .stats-card-value {
+    font-size: 22px;
+  }
+  
+  .stats-card-icon {
+    font-size: 42px;
+  }
+}
+
 @media (max-width: 768px) {
-  .stat-content {
+  .stats-card-content {
     flex-direction: column;
     text-align: center;
+    gap: 12px;
   }
 
-  .stat-icon {
+  .stats-card-icon {
     margin-left: 0;
-    margin-top: 12px;
+    margin-top: 0;
     font-size: 36px;
+    order: -1; /* Move icon to top on mobile */
   }
 
-  .stat-value {
+  .stats-card-value {
     font-size: 20px;
+  }
+  
+  .stats-card-title {
+    font-size: 13px;
   }
 }
 
 @media (max-width: 480px) {
-  .stat-value {
+  .stats-card-value {
     font-size: 18px;
   }
 
-  .stat-icon {
-    font-size: 28px;
-    margin-left: 12px;
+  .stats-card-icon {
+    font-size: 32px;
+  }
+  
+  .stats-card .ant-card-body {
+    padding: 16px;
   }
 }
 
-/* Dark mode*/
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
-  .stat-card {
+  .stats-card {
     background: #1f1f1f;
     border-color: #303030;
   }
 
-  .stat-label {
+  .stats-card-title {
     color: #bfbfbf;
   }
+  
+  .stats-card-value {
+    color: #e6e6e6;
+  }
 
-  .stat-card:hover {
+  .stats-card:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
+  
+  .stats-card::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  }
+}
+
+/* Print styles */
+@media print {
+  .stats-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .stats-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .stats-card::before {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .stats-card {
+    border: 2px solid #000;
+  }
+  
+  .stats-card:hover {
+    border-color: #1890ff;
+  }
+  
+  .stats-card-profit {
+    border-left: 4px solid #006400;
+  }
+  
+  .stats-card-trades {
+    border-left: 4px solid #0000ff;
+  }
+  
+  .stats-card-success {
+    border-left: 4px solid #8b4513;
+  }
+  
+  .stats-card-opportunities {
+    border-left: 4px solid #4b0082;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .stats-card,
+  .stats-card-icon,
+  .stats-card-value {
+    transition: none;
+    animation: none;
+  }
+  
+  .stats-card:hover {
+    transform: none;
+  }
+  
+  .stats-card:hover .stats-card-icon {
+    transform: none;
+  }
+  
+  .stats-card::before {
+    display: none;
+  }
+}
+
+/* Focus styles for accessibility */
+.stats-card:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+.stats-card-info-icon:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* RTL (Right-to-Left) language support */
+[dir="rtl"] .stats-card-icon {
+  margin-left: 0;
+  margin-right: 16px;
+}
+
+[dir="rtl"] .stats-card-trend {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .stats-card-profit,
+[dir="rtl"] .stats-card-trades,
+[dir="rtl"] .stats-card-success,
+[dir="rtl"] .stats-card-opportunities {
+  border-left: none;
+  border-right: 4px solid;
 }

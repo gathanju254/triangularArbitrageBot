@@ -1,8 +1,6 @@
 # backend/apps/arbitrage_bot/models/__init__.py
-# backend/apps/arbitrage_bot/models/__init__.py
-
 from .arbitrage_opportunity import ArbitrageOpportunity, ArbitrageOpportunityRecord
-from .trade import Trade, TradeRecord, BotConfig
+from .trade import Trade, TradeRecord
 
 # Import RiskAlert if it exists
 try:
@@ -21,5 +19,4 @@ except ImportError:
         'ArbitrageOpportunityRecord',
         'Trade', 
         'TradeRecord', 
-        'BotConfig'
     ]
