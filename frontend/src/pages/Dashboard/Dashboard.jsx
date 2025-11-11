@@ -58,7 +58,7 @@ const Dashboard = () => {
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
-        <Title level={2}>Trading Dashboard</Title>
+        <Title level={2}>Arbitrage Dashboard</Title>
         <div className="dashboard-subtitle">
           Real-time triangular arbitrage opportunities and performance metrics
           {refreshing && (
@@ -94,25 +94,7 @@ const Dashboard = () => {
       <StatsCards stats={stats} loading={loading || refreshing} />
 
       <Row gutter={[16, 16]} className="dashboard-main-content">
-        <Col xs={24} lg={16}>
-          <Card 
-            title={
-              <span className="dashboard-card-title">
-                <LineChartOutlined className="dashboard-card-icon" />
-                Profit History (7 Days)
-              </span>
-            }
-            loading={loading}
-            className="dashboard-chart-card"
-            extra={
-              refreshing && <DataLoader size="small" text="" />
-            }
-          >
-            <ProfitChart data={profit_history} />
-          </Card>
-        </Col>
-        
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={12}>
           <Card 
             title={
               <span className="dashboard-card-title">
@@ -127,6 +109,24 @@ const Dashboard = () => {
             className="dashboard-opportunities-card"
           >
             <OpportunitiesTable opportunities={opportunities} />
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Card 
+            title={
+              <span className="dashboard-card-title">
+                <LineChartOutlined className="dashboard-card-icon" />
+                Profit History (7 Days)
+              </span>
+            }
+            loading={loading}
+            className="dashboard-chart-card"
+            extra={
+              refreshing && <DataLoader size="small" text="" />
+            }
+          >
+            <ProfitChart data={profit_history} />
           </Card>
         </Col>
       </Row>
