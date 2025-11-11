@@ -1,0 +1,1 @@
+# backend/apps/trading/signals/base_signal.py

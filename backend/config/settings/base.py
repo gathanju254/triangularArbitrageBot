@@ -53,6 +53,10 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.arbitrage_bot',
     'apps.notifications',
+    #'apps.analytics',
+    #'apps.risk_management',
+    'apps.trading',
+    #'apps.exchanges',
 ]
 
 MIDDLEWARE = [

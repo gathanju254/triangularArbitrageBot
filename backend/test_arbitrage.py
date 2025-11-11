@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
-from arbitrage_bot.core.arbitrage_engine import ArbitrageEngine
-from arbitrage_bot.core.market_data import MarketDataManager
+from apps.arbitrage_bot.core.arbitrage_engine import ArbitrageEngine
+from apps.arbitrage_bot.core.market_data import MarketDataManager
 
 class Command(BaseCommand):
     help = 'Test arbitrage engine functionality'

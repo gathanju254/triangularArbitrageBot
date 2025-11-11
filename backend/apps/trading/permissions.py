@@ -1,0 +1,1 @@
+# backend/apps/trading/permissions.py
