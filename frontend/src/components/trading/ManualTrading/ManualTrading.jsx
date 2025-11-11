@@ -1,30 +1,32 @@
-// frontend/src/components/trading/ManualTrade/ManualTrade.jsx
+// frontend/src/components/trading/ManualTrading/ManualTrading.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Card,
   Form,
-  Input,
   InputNumber,
   Select,
   Button,
   Row,
   Col,
-  Divider,
   Typography,
   Tag,
   Alert,
   Space,
   Statistic,
-  Switch,
-  Tooltip
+  Divider,
+  message,
+  Radio,
+  Progress
 } from 'antd';
 import {
-  DollarOutlined,
-  PercentageOutlined,
-  CalculatorOutlined,
   RocketOutlined,
-  SafetyOutlined,
-  InfoCircleOutlined
+  ArrowRightOutlined,
+  CalculatorOutlined,
+  ReloadOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  SwapOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import './ManualTrading.css';
 
@@ -33,364 +35,497 @@ const { Option } = Select;
 
 const ManualTrading = () => {
   const [form] = Form.useForm();
-  const [orderType, setOrderType] = useState('market');
-  const [side, setSide] = useState('buy');
   const [calculating, setCalculating] = useState(false);
-  const [estimatedCost, setEstimatedCost] = useState(0);
-  const [availableBalance, setAvailableBalance] = useState(10000);
+  const [estimatedProfit, setEstimatedProfit] = useState(0);
+  const [tradingActive, setTradingActive] = useState(false);
+  const [arbitrageType, setArbitrageType] = useState('triangular');
+  const [currentOpportunities, setCurrentOpportunities] = useState([]);
 
-  // Mock market data
-  const marketData = {
-    BTCUSDT: { price: 43250.75, change: 2.45 },
-    ETHUSDT: { price: 2580.30, change: -1.23 },
-    SOLUSDT: { price: 98.45, change: 5.67 }
-  };
-
-  const tradingPairs = [
-    { value: 'BTCUSDT', label: 'BTC/USDT' },
-    { value: 'ETHUSDT', label: 'ETH/USDT' },
-    { value: 'SOLUSDT', label: 'SOL/USDT' },
-    { value: 'ADAUSDT', label: 'ADA/USDT' },
-    { value: 'DOTUSDT', label: 'DOT/USDT' }
+  // Triangular arbitrage opportunities
+  const triangularOpportunities = [
+    {
+      id: 'btc-eth-usdt',
+      name: 'BTC → ETH → USDT → BTC',
+      path: ['BTC/USDT', 'ETH/BTC', 'ETH/USDT'],
+      profit: 0.8,
+      risk: 'Low',
+      volume: 'High',
+      executionTime: 1200
+    },
+    {
+      id: 'eth-btc-usdt',
+      name: 'ETH → BTC → USDT → ETH', 
+      path: ['ETH/USDT', 'BTC/ETH', 'BTC/USDT'],
+      profit: 0.6,
+      risk: 'Low',
+      volume: 'High',
+      executionTime: 1100
+    },
+    {
+      id: 'sol-eth-btc',
+      name: 'SOL → ETH → BTC → SOL',
+      path: ['SOL/USDT', 'ETH/SOL', 'BTC/ETH', 'BTC/SOL'],
+      profit: 1.2,
+      risk: 'Medium',
+      volume: 'Medium',
+      executionTime: 1500
+    }
   ];
 
+  // Cross-exchange arbitrage opportunities
+  const crossExchangeOpportunities = [
+    {
+      id: 'btc-binance-kraken',
+      name: 'BTC: Binance → Kraken',
+      path: ['Binance: BTC/USDT', 'Kraken: BTC/USDT'],
+      profit: 1.5,
+      risk: 'Medium',
+      volume: 'Very High',
+      executionTime: 1800
+    },
+    {
+      id: 'eth-coinbase-okx',
+      name: 'ETH: Coinbase → OKX',
+      path: ['Coinbase: ETH/USDT', 'OKX: ETH/USDT'],
+      profit: 2.1,
+      risk: 'Medium',
+      volume: 'High',
+      executionTime: 2000
+    },
+    {
+      id: 'sol-kucoin-binance',
+      name: 'SOL: KuCoin → Binance',
+      path: ['KuCoin: SOL/USDT', 'Binance: SOL/USDT'],
+      profit: 1.8,
+      risk: 'High',
+      volume: 'Medium',
+      executionTime: 2200
+    }
+  ];
+
+  // Available exchanges with status
   const exchanges = [
-    { value: 'binance', label: 'Binance' },
-    { value: 'kraken', label: 'Kraken' },
-    { value: 'coinbase', label: 'Coinbase' },
-    { value: 'okx', label: 'OKX' }
+    { value: 'binance', label: 'Binance', status: 'connected', fee: 0.1 },
+    { value: 'kraken', label: 'Kraken', status: 'connected', fee: 0.16 },
+    { value: 'coinbase', label: 'Coinbase', status: 'connected', fee: 0.2 },
+    { value: 'okx', label: 'OKX', status: 'connected', fee: 0.1 },
+    { value: 'kucoin', label: 'KuCoin', status: 'connected', fee: 0.1 },
+    { value: 'huobi', label: 'Huobi', status: 'connected', fee: 0.15 }
   ];
 
   useEffect(() => {
-    // Calculate estimated cost when form values change
-    const subscription = form.watch((values) => {
-      if (values.symbol && values.quantity && marketData[values.symbol]) {
-        calculateEstimatedCost(values);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
+    setCurrentOpportunities(
+      arbitrageType === 'triangular' ? triangularOpportunities : crossExchangeOpportunities
+    );
+  }, [arbitrageType]);
 
-  const calculateEstimatedCost = (values) => {
+  const calculateArbitrage = (values = null) => {
     setCalculating(true);
-    const currentPrice = marketData[values.symbol]?.price || 0;
-    const quantity = values.quantity || 0;
+    const formValues = values || form.getFieldsValue();
+    const amount = formValues.amount || 0;
+    const selectedStrategy = formValues.strategy;
     
     setTimeout(() => {
-      const cost = currentPrice * quantity;
-      setEstimatedCost(cost);
+      if (selectedStrategy && amount > 0) {
+        const currentStrategies = arbitrageType === 'triangular' ? triangularOpportunities : crossExchangeOpportunities;
+        const selectedPair = currentStrategies.find(p => p.id === selectedStrategy);
+        
+        if (selectedPair) {
+          const baseProfit = (selectedPair.profit / 100) * amount;
+          const fees = amount * 0.002;
+          const netProfit = baseProfit - fees;
+          setEstimatedProfit(netProfit);
+        }
+      } else {
+        setEstimatedProfit(0);
+      }
       setCalculating(false);
-    }, 300);
+    }, 800);
   };
 
-  const onOrderTypeChange = (value) => {
-    setOrderType(value);
+  const onValuesChange = (changedValues, allValues) => {
+    if (changedValues.amount || changedValues.strategy) {
+      calculateArbitrage(allValues);
+    }
   };
 
-  const onSideChange = (value) => {
-    setSide(value);
+  const executeArbitrage = async (values) => {
+    try {
+      setTradingActive(true);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      message.success(`Arbitrage executed! Profit: $${estimatedProfit.toFixed(2)}`);
+      form.resetFields();
+      setEstimatedProfit(0);
+    } catch (error) {
+      message.error('Arbitrage execution failed. Please try again.');
+    } finally {
+      setTradingActive(false);
+    }
   };
 
   const onFinish = async (values) => {
-    console.log('Order submitted:', values);
-    // Here you would integrate with your trading API
-    // await tradingService.placeOrder(values);
-    
-    // Mock success
-    Alert.success(`Order placed successfully! ${values.side.toUpperCase()} ${values.quantity} ${values.symbol}`);
-    form.resetFields();
-    setEstimatedCost(0);
+    if (estimatedProfit <= 0) {
+      message.warning('No profitable arbitrage opportunity found.');
+      return;
+    }
+    await executeArbitrage(values);
   };
 
-  const getCurrentPrice = (symbol) => {
-    return marketData[symbol]?.price || 0;
+  const getRiskColor = (risk) => {
+    switch (risk) {
+      case 'Low': return 'green';
+      case 'Medium': return 'orange';
+      case 'High': return 'red';
+      default: return 'blue';
+    }
   };
 
-  const getPriceChange = (symbol) => {
-    const change = marketData[symbol]?.change || 0;
-    return {
-      value: change,
-      isPositive: change > 0
-    };
+  const handleArbitrageTypeChange = (e) => {
+    setArbitrageType(e.target.value);
+    form.setFieldsValue({ strategy: undefined });
+    setEstimatedProfit(0);
+  };
+
+  const handleRecalculate = () => {
+    const values = form.getFieldsValue();
+    if (values.amount && values.strategy) {
+      calculateArbitrage(values);
+    } else {
+      message.info('Please select a strategy and enter amount first');
+    }
+  };
+
+  const getSelectedStrategy = () => {
+    const currentStrategies = arbitrageType === 'triangular' ? triangularOpportunities : crossExchangeOpportunities;
+    return currentStrategies.find(p => p.id === form.getFieldValue('strategy'));
   };
 
   return (
     <div className="manual-trading">
       <Row gutter={[24, 24]}>
-        {/* Order Form */}
+        {/* Arbitrage Configuration */}
         <Col xs={24} lg={16}>
           <Card 
             title={
-              <Space>
-                <RocketOutlined />
-                Place New Order
+              <Space size="small">
+                <ThunderboltOutlined />
+                <Text className="card-title-text">Quick Arbitrage</Text>
+                <Tag color="green" className="live-badge">
+                  LIVE
+                </Tag>
               </Space>
             }
-            className="order-form-card"
+            className="arbitrage-form-card"
+            extra={
+              <div className="trading-status">
+                {tradingActive ? (
+                  <Tag icon={<PlayCircleOutlined />} color="green">
+                    Executing
+                  </Tag>
+                ) : (
+                  <Tag icon={<PauseCircleOutlined />} color="default">
+                    Ready
+                  </Tag>
+                )}
+              </div>
+            }
           >
             <Form
               form={form}
               layout="vertical"
               onFinish={onFinish}
-              initialValues={{
-                symbol: 'BTCUSDT',
-                side: 'buy',
-                orderType: 'market',
-                quantity: 0.1,
-                exchange: 'binance'
-              }}
+              onValuesChange={onValuesChange}
             >
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
+              {/* Arbitrage Type Selection */}
+              <div className="arbitrage-type-section">
+                <Text strong className="section-label">Arbitrage Type</Text>
+                <Radio.Group 
+                  value={arbitrageType} 
+                  onChange={handleArbitrageTypeChange}
+                  buttonStyle="solid"
+                  className="arbitrage-type-selector"
+                >
+                  <Radio.Button value="triangular">
+                    <SwapOutlined /> Triangular
+                  </Radio.Button>
+                  <Radio.Button value="cross-exchange">
+                    <SwapOutlined /> Cross-Exchange
+                  </Radio.Button>
+                </Radio.Group>
+              </div>
+
+              <Divider />
+
+              {/* Strategy and Amount */}
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
                   <Form.Item
-                    label="Trading Pair"
-                    name="symbol"
-                    rules={[{ required: true, message: 'Please select a trading pair' }]}
+                    label="Select Opportunity"
+                    name="strategy"
+                    rules={[{ required: true, message: 'Please select arbitrage opportunity' }]}
                   >
                     <Select 
-                      placeholder="Select trading pair"
-                      className="trading-pair-select"
+                      placeholder={`Select ${arbitrageType} opportunity`}
+                      className="arbitrage-strategy-select"
+                      showSearch
+                      optionFilterProp="children"
+                      dropdownStyle={{ minWidth: '400px' }}
                     >
-                      {tradingPairs.map(pair => (
-                        <Option key={pair.value} value={pair.value}>
-                          <Space>
-                            <span>{pair.label}</span>
-                            <Tag color={getPriceChange(pair.value).isPositive ? 'green' : 'red'}>
-                              {getPriceChange(pair.value).value}%
-                            </Tag>
-                            <Text type="secondary">
-                              ${getCurrentPrice(pair.value).toLocaleString()}
-                            </Text>
-                          </Space>
+                      {currentOpportunities.map(opportunity => (
+                        <Option key={opportunity.id} value={opportunity.id}>
+                          <div className="strategy-option">
+                            <Text strong className="strategy-name">{opportunity.name}</Text>
+                            <div className="strategy-meta">
+                              <Tag color={getRiskColor(opportunity.risk)} size="small">
+                                {opportunity.risk}
+                              </Tag>
+                              <Text className="profit-text" style={{ color: opportunity.profit > 1 ? '#52c41a' : '#faad14' }}>
+                                {opportunity.profit}% profit
+                              </Text>
+                            </div>
+                          </div>
                         </Option>
                       ))}
                     </Select>
                   </Form.Item>
                 </Col>
                 
-                <Col xs={24} sm={12}>
+                <Col xs={24} md={12}>
                   <Form.Item
-                    label="Exchange"
-                    name="exchange"
-                    rules={[{ required: true, message: 'Please select an exchange' }]}
+                    label="Investment Amount (USDT)"
+                    name="amount"
+                    rules={[{ required: true, message: 'Please enter amount' }]}
                   >
-                    <Select placeholder="Select exchange">
-                      {exchanges.map(exchange => (
-                        <Option key={exchange.value} value={exchange.value}>
-                          {exchange.label}
-                        </Option>
-                      ))}
-                    </Select>
+                    <InputNumber
+                      placeholder="Enter amount in USDT"
+                      min={10}
+                      max={100000}
+                      style={{ width: '100%' }}
+                      formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Order Side"
-                    name="side"
-                    rules={[{ required: true, message: 'Please select order side' }]}
-                  >
-                    <Select onChange={onSideChange}>
-                      <Option value="buy">
-                        <Space>
-                          <span style={{ color: '#52c41a' }}>BUY</span>
-                          <Text type="secondary">Purchase assets</Text>
-                        </Space>
-                      </Option>
-                      <Option value="sell">
-                        <Space>
-                          <span style={{ color: '#ff4d4f' }}>SELL</span>
-                          <Text type="secondary">Sell assets</Text>
-                        </Space>
-                      </Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Order Type"
-                    name="orderType"
-                    rules={[{ required: true, message: 'Please select order type' }]}
-                  >
-                    <Select onChange={onOrderTypeChange}>
-                      <Option value="market">Market Order</Option>
-                      <Option value="limit">Limit Order</Option>
-                      <Option value="stop">Stop Order</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {orderType !== 'market' && (
-                <Row gutter={16}>
-                  <Col xs={24} sm={12}>
+              {/* Exchange Selection - Only for Cross-Exchange */}
+              {arbitrageType === 'cross-exchange' && (
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} md={12}>
                     <Form.Item
-                      label="Price"
-                      name="price"
-                      rules={[{ required: true, message: 'Please enter price' }]}
+                      label="Buy Exchange"
+                      name="buyExchange"
+                      initialValue="binance"
                     >
-                      <InputNumber
-                        placeholder="Enter price"
-                        min={0}
-                        step={0.01}
-                        style={{ width: '100%' }}
-                        prefix={<DollarOutlined />}
-                      />
+                      <Select placeholder="Select exchange to buy from">
+                        {exchanges.map(exchange => (
+                          <Option key={exchange.value} value={exchange.value}>
+                            <Space>
+                              <span>{exchange.label}</span>
+                              <Tag color="green" size="small">{exchange.fee}% fee</Tag>
+                            </Space>
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label="Sell Exchange"
+                      name="sellExchange"
+                      initialValue="kraken"
+                    >
+                      <Select placeholder="Select exchange to sell on">
+                        {exchanges.map(exchange => (
+                          <Option key={exchange.value} value={exchange.value}>
+                            <Space>
+                              <span>{exchange.label}</span>
+                              <Tag color="blue" size="small">{exchange.fee}% fee</Tag>
+                            </Space>
+                          </Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                 </Row>
               )}
 
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Quantity"
-                    name="quantity"
-                    rules={[{ required: true, message: 'Please enter quantity' }]}
-                  >
-                    <InputNumber
-                      placeholder="Enter quantity"
-                      min={0}
-                      step={0.0001}
-                      style={{ width: '100%' }}
-                      onChange={() => calculateEstimatedCost(form.getFieldsValue())}
-                    />
-                  </Form.Item>
-                </Col>
-                
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Total Cost"
-                    className="estimated-cost"
-                  >
-                    <div className="cost-display">
-                      <Statistic
-                        value={estimatedCost}
-                        precision={2}
-                        prefix="$"
-                        loading={calculating}
-                        valueStyle={{
-                          color: side === 'buy' ? '#52c41a' : '#ff4d4f',
-                          fontSize: '18px'
-                        }}
-                      />
-                      {estimatedCost > availableBalance && (
-                        <Alert
-                          message="Insufficient balance"
-                          type="warning"
-                          showIcon
-                          size="small"
-                          style={{ marginTop: 8 }}
+              {/* Profit Calculation */}
+              {(form.getFieldValue('amount') && form.getFieldValue('strategy')) && (
+                <div className="profit-calculation-section">
+                  <Card title="Profit Estimate" className="profit-card">
+                    <Row gutter={[16, 16]}>
+                      <Col xs={12} md={8}>
+                        <Statistic
+                          title="Net Profit"
+                          value={estimatedProfit}
+                          precision={2}
+                          prefix="$"
+                          valueStyle={{
+                            color: estimatedProfit > 0 ? '#52c41a' : '#ff4d4f',
+                          }}
+                          loading={calculating}
                         />
-                      )}
-                    </div>
-                  </Form.Item>
-                </Col>
-              </Row>
+                      </Col>
+                      <Col xs={12} md={8}>
+                        <Statistic
+                          title="Return %"
+                          value={((estimatedProfit / (form.getFieldValue('amount') || 1)) * 100) || 0}
+                          precision={3}
+                          suffix="%"
+                          valueStyle={{
+                            color: estimatedProfit > 0 ? '#52c41a' : '#ff4d4f',
+                          }}
+                        />
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <div className="execution-info">
+                          <Text type="secondary">Execution Time</Text>
+                          <Text strong>{getSelectedStrategy()?.executionTime}ms</Text>
+                          <Progress 
+                            percent={75} 
+                            size="small" 
+                            status="active"
+                            strokeColor={{
+                              '0%': '#108ee9',
+                              '100%': '#87d068',
+                            }}
+                          />
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card>
+                </div>
+              )}
 
-              <Divider />
-
-              <Form.Item>
-                <Space size="large">
+              {/* Action Buttons */}
+              <div className="action-buttons">
+                <Space size="middle">
                   <Button 
                     type="primary" 
                     htmlType="submit"
                     icon={<RocketOutlined />}
+                    loading={tradingActive}
+                    disabled={estimatedProfit <= 0 || calculating || !form.getFieldValue('amount') || !form.getFieldValue('strategy')}
+                    className="execute-btn"
                     size="large"
-                    disabled={estimatedCost > availableBalance}
-                    className="submit-order-btn"
                   >
-                    Place {side.toUpperCase()} Order
+                    Execute Arbitrage
                   </Button>
                   <Button 
-                    htmlType="button" 
-                    onClick={() => form.resetFields()}
-                    size="large"
+                    icon={<CalculatorOutlined />}
+                    onClick={handleRecalculate}
+                    loading={calculating}
+                    disabled={!form.getFieldValue('amount') || !form.getFieldValue('strategy')}
+                  >
+                    Recalculate
+                  </Button>
+                  <Button 
+                    icon={<ReloadOutlined />}
+                    onClick={() => {
+                      form.resetFields();
+                      setEstimatedProfit(0);
+                    }}
                   >
                     Reset
                   </Button>
                 </Space>
-              </Form.Item>
+              </div>
+
+              {/* Info Alert */}
+              {!form.getFieldValue('amount') || !form.getFieldValue('strategy') ? (
+                <Alert
+                  message="Setup Required"
+                  description="Select an arbitrage opportunity and enter investment amount to calculate profits."
+                  type="info"
+                  showIcon
+                  style={{ marginTop: 16 }}
+                />
+              ) : estimatedProfit <= 0 && (
+                <Alert
+                  message="Not Profitable"
+                  description="This opportunity doesn't show profitable returns with current parameters."
+                  type="warning"
+                  showIcon
+                  style={{ marginTop: 16 }}
+                />
+              )}
             </Form>
           </Card>
         </Col>
 
-        {/* Trading Info Panel */}
+        {/* Arbitrage Info & Status */}
         <Col xs={24} lg={8}>
           <Card 
-            title={
-              <Space>
-                <InfoCircleOutlined />
-                Trading Information
-              </Space>
-            }
-            className="trading-info-card"
+            title="Opportunity Details"
+            className="arbitrage-info-card"
           >
-            <div className="info-section">
-              <Title level={5}>Available Balance</Title>
-              <Statistic
-                value={availableBalance}
-                precision={2}
-                prefix="$"
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </div>
-
-            <Divider />
-
-            <div className="info-section">
-              <Title level={5}>Current Prices</Title>
-              {Object.entries(marketData).map(([symbol, data]) => (
-                <div key={symbol} className="price-item">
-                  <Text strong>{symbol}</Text>
-                  <Space>
-                    <Text>${data.price.toLocaleString()}</Text>
-                    <Tag color={data.change > 0 ? 'green' : 'red'}>
-                      {data.change > 0 ? '+' : ''}{data.change}%
-                    </Tag>
-                  </Space>
+            <div className="info-content">
+              {/* Selected Path */}
+              <div className="info-section">
+                <Text strong>Selected Path:</Text>
+                <div className="path-display">
+                  {getSelectedStrategy() ? (
+                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                      {getSelectedStrategy().path.map((step, index) => (
+                        <div key={index} className="path-step">
+                          <Text className="path-text">{step}</Text>
+                          {index < getSelectedStrategy().path.length - 1 && (
+                            <ArrowRightOutlined className="path-arrow" />
+                          )}
+                        </div>
+                      ))}
+                    </Space>
+                  ) : (
+                    <Text type="secondary" className="no-selection">
+                      Select an opportunity to view trading path
+                    </Text>
+                  )}
                 </div>
-              ))}
-            </div>
-
-            <Divider />
-
-            <div className="info-section">
-              <Title level={5}>Risk Management</Title>
-              <div className="risk-item">
-                <Text>Max Position Size</Text>
-                <Text strong>$2,000</Text>
               </div>
-              <div className="risk-item">
-                <Text>Daily Loss Limit</Text>
-                <Text strong>$500</Text>
-              </div>
-              <div className="risk-item">
-                <Text>Leverage</Text>
-                <Text strong>1x</Text>
-              </div>
-            </div>
 
-            <Divider />
+              <Divider />
 
-            <div className="info-section">
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div className="setting-item">
-                  <Text>Post Only</Text>
-                  <Switch size="small" />
+              {/* Exchange Status */}
+              <div className="info-section">
+                <Text strong>Exchange Status:</Text>
+                <div className="exchange-status">
+                  {exchanges.map(exchange => (
+                    <div key={exchange.value} className="exchange-item">
+                      <Text>{exchange.label}</Text>
+                      <Tag color="green" size="small">
+                        {exchange.status}
+                      </Tag>
+                    </div>
+                  ))}
                 </div>
-                <div className="setting-item">
-                  <Text>Reduce Only</Text>
-                  <Switch size="small" />
+              </div>
+
+              <Divider />
+
+              {/* Risk Management */}
+              <div className="info-section">
+                <Text strong>Safety Limits:</Text>
+                <div className="risk-items">
+                  <div className="risk-item">
+                    <Text>Max Slippage</Text>
+                    <Tag color="orange">1.0%</Tag>
+                  </div>
+                  <div className="risk-item">
+                    <Text>Min Profit</Text>
+                    <Tag color="green">0.3%</Tag>
+                  </div>
+                  <div className="risk-item">
+                    <Text>Timeout</Text>
+                    <Tag color="blue">5s</Tag>
+                  </div>
+                  <div className="risk-item">
+                    <Text>Max Investment</Text>
+                    <Tag color="purple">$10k</Tag>
+                  </div>
                 </div>
-                <div className="setting-item">
-                  <Text>Iceberg Order</Text>
-                  <Switch size="small" />
-                </div>
-              </Space>
+              </div>
             </div>
           </Card>
         </Col>

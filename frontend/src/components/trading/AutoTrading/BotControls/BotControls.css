@@ -1,1 +1,378 @@
-/*frontend/src/components/trading/AutoTrading/BotControls/BotControls.css*/
+/* frontend/src/components/trading/AutoTrading/BotControls/BotControls.css */
+.bot-controls {
+  width: 100%;
+}
+
+.bot-controls-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.bot-controls-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bot-controls-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 16px 20px;
+}
+
+.bot-controls-card .ant-card-head-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bot-icon {
+  color: #1890ff;
+  font-size: 20px;
+}
+
+.bot-controls-card .ant-card-body {
+  padding: 20px;
+}
+
+/* Status Alert */
+.bot-status-alert {
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #b7eb8f;
+  background-color: #f6ffed;
+}
+
+.bot-status-alert .ant-alert-description {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Control Buttons */
+.control-buttons-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.start-button {
+  background: #52c41a;
+  border: none;
+  border-radius: 6px;
+  min-width: 120px;
+  height: 40px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(82, 196, 26, 0.3);
+}
+
+.start-button:hover {
+  background: #73d13d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(82, 196, 26, 0.4);
+}
+
+.pause-button {
+  background: #faad14;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  min-width: 100px;
+  height: 40px;
+  font-weight: 600;
+}
+
+.pause-button:hover {
+  background: #ffc53d;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.stop-button {
+  background: #ff4d4f;
+  border: none;
+  border-radius: 6px;
+  min-width: 100px;
+  height: 40px;
+  font-weight: 600;
+}
+
+.stop-button:hover {
+  background: #ff7875;
+  transform: translateY(-1px);
+}
+
+/* Sections */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: #262626;
+  font-size: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header .anticon {
+  color: #1890ff;
+}
+
+.stats-section {
+  margin-bottom: 24px;
+}
+
+.bot-stats {
+  margin: 0;
+}
+
+.bot-stats .ant-statistic {
+  text-align: center;
+  padding: 12px 8px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.bot-stats .ant-statistic:hover {
+  background: #f5f5f5;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bot-stats .ant-statistic-title {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bot-stats .ant-statistic-content {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Exchange Status */
+.status-section {
+  margin-bottom: 20px;
+}
+
+.exchange-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.exchange-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.exchange-item:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exchange-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #262626;
+}
+
+.exchange-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.status-dot.connected {
+  background: #52c41a;
+  box-shadow: 0 0 6px rgba(82, 196, 26, 0.5);
+}
+
+.status-dot.disconnected {
+  background: #ff4d4f;
+}
+
+.latency {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+/* Quick Stats Bar */
+.quick-stats-bar {
+  padding: 16px;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.quick-stats-bar .quick-stat {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.quick-stats-bar .quick-stat strong {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.stat-divider {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 300;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .bot-controls-card .ant-card-body {
+    padding: 16px;
+  }
+  
+  .control-buttons-section {
+    padding: 12px;
+  }
+  
+  .bot-stats .ant-col {
+    margin-bottom: 12px;
+  }
+  
+  .exchange-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .exchange-item {
+    padding: 8px 12px;
+  }
+  
+  .quick-stats-bar {
+    padding: 12px;
+  }
+  
+  .quick-stats-bar .quick-stat {
+    font-size: 12px;
+  }
+  
+  .quick-stats-bar .quick-stat strong {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bot-controls-card .ant-card-head-title {
+    font-size: 16px;
+  }
+  
+  .control-buttons-section {
+    text-align: center;
+  }
+  
+  .start-button,
+  .pause-button,
+  .stop-button {
+    min-width: 100px;
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .exchange-status-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-stats-bar {
+    padding: 8px 12px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .bot-controls-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .bot-controls-card .ant-card-head {
+    background: linear-gradient(135deg, #262626 0%, #1f1f1f 100%);
+    border-bottom-color: #303030;
+  }
+  
+  .bot-controls-card .ant-card-head-title {
+    color: #e6e6e6;
+  }
+  
+  .control-buttons-section {
+    background: #262626;
+    border-color: #303030;
+  }
+  
+  .bot-stats .ant-statistic {
+    background: #262626;
+    border-color: #303030;
+  }
+  
+  .bot-stats .ant-statistic:hover {
+    background: #303030;
+  }
+  
+  .bot-stats .ant-statistic-title {
+    color: #8c8c8c;
+  }
+  
+  .exchange-item {
+    background: #262626;
+    border-color: #303030;
+  }
+  
+  .exchange-item:hover {
+    background: #303030;
+  }
+  
+  .exchange-name {
+    color: #e6e6e6;
+  }
+}
+
+/* Animation for active trading */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.bot-controls-card.active {
+  animation: pulse 2s infinite;
+}
+
+/* Focus styles for accessibility */
+.start-button:focus,
+.pause-button:focus,
+.stop-button:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}

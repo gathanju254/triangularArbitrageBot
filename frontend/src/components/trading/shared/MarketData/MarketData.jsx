@@ -10,19 +10,18 @@ import {
   Row,
   Col,
   Statistic,
-  Progress,
-  Tooltip,
   Space,
-  Badge
+  Badge,
+  Progress
 } from 'antd';
 import {
   RiseOutlined,
-  FallOutlined,
   LineChartOutlined,
-  DollarOutlined,
   SearchOutlined,
-  StarOutlined,
-  EyeOutlined
+  SwapOutlined,
+  ThunderboltOutlined,
+  ClockCircleOutlined,
+  ArrowRightOutlined
 } from '@ant-design/icons';
 import './MarketData.css';
 
@@ -31,327 +30,324 @@ const { Option } = Select;
 const { Search } = Input;
 
 const MarketData = () => {
-  const [marketData, setMarketData] = useState([]);
+  const [arbitrageData, setArbitrageData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [selectedExchange, setSelectedExchange] = useState('all');
-  const [watchlist, setWatchlist] = useState(new Set(['BTCUSDT', 'ETHUSDT']));
+  const [selectedType, setSelectedType] = useState('all');
+  const [loading, setLoading] = useState(true);
 
-  // Mock market data
-  const initialMarketData = [
+  // Mock triangular and cross-exchange arbitrage data
+  const initialArbitrageData = [
     {
       key: '1',
-      symbol: 'BTCUSDT',
-      name: 'Bitcoin',
-      price: 43250.75,
-      change: 2.45,
-      changePercent: 2.45,
-      volume: 2856341200,
-      high: 43500.00,
-      low: 42800.50,
-      exchange: 'binance',
-      sparkline: [43000, 43100, 43200, 43150, 43250]
+      type: 'triangular',
+      path: 'BTC → ETH → USDT → BTC',
+      profit: 2.45,
+      volume: 2856341,
+      timeframe: '15s',
+      exchanges: ['binance', 'kraken', 'coinbase'],
+      status: 'high',
+      timestamp: '2024-01-15 14:30:00'
     },
     {
       key: '2',
-      symbol: 'ETHUSDT',
-      name: 'Ethereum',
-      price: 2580.30,
-      change: -1.23,
-      changePercent: -1.23,
-      volume: 1456321800,
-      high: 2620.00,
-      low: 2560.50,
-      exchange: 'binance',
-      sparkline: [2600, 2590, 2580, 2570, 2580]
+      type: 'cross-exchange',
+      path: 'ETH/USDT',
+      profit: 1.23,
+      volume: 1456321,
+      timeframe: '30s',
+      buyExchange: 'kucoin',
+      sellExchange: 'binance',
+      status: 'active',
+      timestamp: '2024-01-15 14:28:00'
     },
     {
       key: '3',
-      symbol: 'SOLUSDT',
-      name: 'Solana',
-      price: 98.45,
-      change: 5.67,
-      changePercent: 5.67,
-      volume: 856321400,
-      high: 99.00,
-      low: 92.50,
-      exchange: 'kraken',
-      sparkline: [93, 94, 95, 96, 98]
+      type: 'triangular',
+      path: 'SOL → ADA → USDT → SOL',
+      profit: 3.67,
+      volume: 856321,
+      timeframe: '20s',
+      exchanges: ['okx', 'huobi', 'binance'],
+      status: 'high',
+      timestamp: '2024-01-15 14:25:00'
     },
     {
       key: '4',
-      symbol: 'ADAUSDT',
-      name: 'Cardano',
-      price: 0.52,
-      change: -0.89,
-      changePercent: -0.89,
-      volume: 356214700,
-      high: 0.53,
-      low: 0.51,
-      exchange: 'coinbase',
-      sparkline: [0.53, 0.525, 0.52, 0.515, 0.52]
+      type: 'cross-exchange',
+      path: 'ADA/USDT',
+      profit: 0.89,
+      volume: 356214,
+      timeframe: '45s',
+      buyExchange: 'coinbase',
+      sellExchange: 'kraken',
+      status: 'medium',
+      timestamp: '2024-01-15 14:22:00'
     },
     {
       key: '5',
-      symbol: 'DOTUSDT',
-      name: 'Polkadot',
-      price: 7.23,
-      change: 1.34,
-      changePercent: 1.34,
-      volume: 256398100,
-      high: 7.30,
-      low: 7.10,
-      exchange: 'okx',
-      sparkline: [7.15, 7.18, 7.20, 7.22, 7.23]
+      type: 'triangular',
+      path: 'DOT → BTC → USDT → DOT',
+      profit: 1.34,
+      volume: 256398,
+      timeframe: '25s',
+      exchanges: ['okx', 'binance', 'kucoin'],
+      status: 'active',
+      timestamp: '2024-01-15 14:20:00'
     }
   ];
 
   useEffect(() => {
-    setMarketData(initialMarketData);
-    setFilteredData(initialMarketData);
+    // Simulate API loading
+    setLoading(true);
+    setTimeout(() => {
+      setArbitrageData(initialArbitrageData);
+      setFilteredData(initialArbitrageData);
+      setLoading(false);
+    }, 500);
   }, []);
 
   useEffect(() => {
     filterData();
-  }, [searchText, selectedExchange, marketData]);
+  }, [searchText, selectedType, arbitrageData]);
 
   const filterData = () => {
-    let filtered = marketData;
+    let filtered = [...arbitrageData]; // Create a copy to avoid mutation
 
     if (searchText) {
       filtered = filtered.filter(item =>
-        item.symbol.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchText.toLowerCase())
+        item.path?.toLowerCase().includes(searchText.toLowerCase())
       );
     }
 
-    if (selectedExchange !== 'all') {
-      filtered = filtered.filter(item => item.exchange === selectedExchange);
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(item => item.type === selectedType);
     }
 
     setFilteredData(filtered);
   };
 
-  const toggleWatchlist = (symbol) => {
-    const newWatchlist = new Set(watchlist);
-    if (newWatchlist.has(symbol)) {
-      newWatchlist.delete(symbol);
-    } else {
-      newWatchlist.add(symbol);
+  const getProfitColor = (profit) => {
+    if (profit >= 2) return '#52c41a';
+    if (profit >= 1) return '#faad14';
+    return '#ff4d4f';
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'high': return 'red';
+      case 'medium': return 'orange';
+      case 'active': return 'green';
+      default: return 'blue';
     }
-    setWatchlist(newWatchlist);
   };
 
   const formatVolume = (volume) => {
-    if (volume >= 1000000000) {
-      return `$${(volume / 1000000000).toFixed(2)}B`;
-    }
+    if (!volume) return '$0';
     if (volume >= 1000000) {
-      return `$${(volume / 1000000).toFixed(2)}M`;
+      return `$${(volume / 1000000).toFixed(1)}M`;
     }
-    return `$${(volume / 1000).toFixed(2)}K`;
+    return `$${(volume / 1000).toFixed(1)}K`;
+  };
+
+  // Safe string conversion with null checking
+  const safeToUpperCase = (str) => {
+    return str?.toUpperCase() || '';
+  };
+
+  const renderExchanges = (record) => {
+    if (!record) return null;
+
+    if (record.type === 'triangular') {
+      return (
+        <div className="exchanges">
+          {record.exchanges?.map((exchange, index) => (
+            <Tag key={index} size="small" color="blue">
+              {safeToUpperCase(exchange)}
+            </Tag>
+          )) || <Text type="secondary">No exchanges</Text>}
+        </div>
+      );
+    } else {
+      return (
+        <div className="exchanges">
+          <Tag size="small" color="green">
+            BUY: {safeToUpperCase(record.buyExchange)}
+          </Tag>
+          <ArrowRightOutlined style={{ fontSize: '10px', margin: '0 4px', color: '#666' }} />
+          <Tag size="small" color="red">
+            SELL: {safeToUpperCase(record.sellExchange)}
+          </Tag>
+        </div>
+      );
+    }
   };
 
   const columns = [
     {
-      title: 'Pair',
-      dataIndex: 'symbol',
-      key: 'symbol',
-      fixed: 'left',
-      render: (symbol, record) => (
-        <Space>
-          <Tooltip title={watchlist.has(symbol) ? 'Remove from watchlist' : 'Add to watchlist'}>
-            <StarOutlined 
-              className={`watchlist-icon ${watchlist.has(symbol) ? 'active' : ''}`}
-              onClick={() => toggleWatchlist(symbol)}
-            />
-          </Tooltip>
-          <div className="symbol-info">
-            <Text strong>{symbol}</Text>
-            <div className="asset-name">{record.name}</div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Price',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong className="price-value">
-            ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </Text>
-          <div className="price-change">
-            {record.change >= 0 ? (
-              <RiseOutlined className="price-up" />
-            ) : (
-              <FallOutlined className="price-down" />
-            )}
-            <Text className={record.change >= 0 ? 'price-up' : 'price-down'}>
-              {record.change >= 0 ? '+' : ''}{record.change}%
-            </Text>
-          </div>
-        </Space>
-      ),
-      sorter: (a, b) => a.price - b.price,
-    },
-    {
-      title: '24h Change',
-      dataIndex: 'changePercent',
-      key: 'changePercent',
-      render: (changePercent) => (
-        <Tag color={changePercent >= 0 ? 'green' : 'red'}>
-          {changePercent >= 0 ? '+' : ''}{changePercent}%
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      width: 100,
+      render: (type) => (
+        <Tag 
+          color={type === 'triangular' ? 'blue' : 'purple'}
+          style={{ fontWeight: '600', fontSize: '11px' }}
+        >
+          {type === 'triangular' ? 'TRI' : 'X-CHANGE'}
         </Tag>
       ),
-      sorter: (a, b) => a.changePercent - b.changePercent,
     },
     {
-      title: '24h Volume',
+      title: 'Trading Path',
+      dataIndex: 'path',
+      key: 'path',
+      render: (path, record) => (
+        <Space direction="vertical" size={4}>
+          <Text strong className="path-text">{path || 'Unknown Path'}</Text>
+          {renderExchanges(record)}
+        </Space>
+      ),
+    },
+    {
+      title: 'Profit',
+      dataIndex: 'profit',
+      key: 'profit',
+      width: 80,
+      render: (profit) => (
+        <Text strong style={{ 
+          color: getProfitColor(profit || 0), 
+          fontSize: '13px',
+          fontFamily: 'monospace'
+        }}>
+          +{(profit || 0).toFixed(2)}%
+        </Text>
+      ),
+      sorter: (a, b) => (a.profit || 0) - (b.profit || 0),
+    },
+    {
+      title: 'Volume',
       dataIndex: 'volume',
       key: 'volume',
+      width: 90,
       render: (volume) => (
-        <Text>{formatVolume(volume)}</Text>
-      ),
-      sorter: (a, b) => a.volume - b.volume,
-    },
-    {
-      title: '24h High/Low',
-      key: 'highLow',
-      render: (record) => (
-        <Space direction="vertical" size={0}>
-          <Text type="secondary" className="high-low-text">
-            H: ${record.high.toLocaleString()}
-          </Text>
-          <Text type="secondary" className="high-low-text">
-            L: ${record.low.toLocaleString()}
-          </Text>
-        </Space>
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          {formatVolume(volume)}
+        </Text>
       ),
     },
     {
-      title: 'Exchange',
-      dataIndex: 'exchange',
-      key: 'exchange',
-      render: (exchange) => (
-        <Tag color="blue" className="exchange-tag">
-          {exchange.toUpperCase()}
+      title: 'Time',
+      dataIndex: 'timeframe',
+      key: 'timeframe',
+      width: 70,
+      render: (timeframe) => (
+        <Tag 
+          icon={<ClockCircleOutlined />} 
+          size="small"
+          style={{ fontSize: '10px', padding: '0 6px' }}
+        >
+          {timeframe || 'N/A'}
         </Tag>
-      ),
-      filters: [
-        { text: 'Binance', value: 'binance' },
-        { text: 'Kraken', value: 'kraken' },
-        { text: 'Coinbase', value: 'coinbase' },
-        { text: 'OKX', value: 'okx' },
-      ],
-      onFilter: (value, record) => record.exchange === value,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      fixed: 'right',
-      render: (record) => (
-        <Space>
-          <Tooltip title="View Details">
-            <EyeOutlined className="action-icon" />
-          </Tooltip>
-          <Tooltip title="Trade">
-            <DollarOutlined className="action-icon trade-icon" />
-          </Tooltip>
-        </Space>
       ),
     },
   ];
 
-  const marketStats = {
-    totalMarketCap: 1650000000000,
-    totalVolume: 85632000000,
-    btcDominance: 42.5,
-    activeCurrencies: 12560
+  const arbitrageStats = {
+    totalOpportunities: filteredData.length,
+    activeOpportunities: filteredData.filter(item => 
+      item.status === 'active' || item.status === 'high'
+    ).length,
+    avgProfit: filteredData.length > 0 
+      ? filteredData.reduce((sum, item) => sum + (item.profit || 0), 0) / filteredData.length 
+      : 0,
+    triangularCount: filteredData.filter(item => item.type === 'triangular').length
   };
 
   return (
-    <div className="market-data">
-      {/* Market Overview */}
-      <Row gutter={[16, 16]} className="market-overview">
-        <Col xs={24} sm={6}>
-          <Card className="market-stat-card">
+    <div className="arbitrage-market-data">
+      {/* Arbitrage Overview */}
+      <Row gutter={[12, 12]} className="arbitrage-overview">
+        <Col xs={12} sm={6}>
+          <Card className="arbitrage-stat-card" size="small">
             <Statistic
-              title="Total Market Cap"
-              value={marketStats.totalMarketCap}
-              formatter={value => `$${(value / 1000000000000).toFixed(2)}T`}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              title="Opportunities"
+              value={arbitrageStats.totalOpportunities}
+              prefix={<ThunderboltOutlined />}
+              valueStyle={{ color: '#1890ff', fontSize: '20px' }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
-          <Card className="market-stat-card">
+        <Col xs={12} sm={6}>
+          <Card className="arbitrage-stat-card" size="small">
             <Statistic
-              title="24h Volume"
-              value={marketStats.totalVolume}
-              formatter={value => `$${(value / 1000000000).toFixed(2)}B`}
-              prefix={<LineChartOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card className="market-stat-card">
-            <Statistic
-              title="BTC Dominance"
-              value={marketStats.btcDominance}
-              suffix="%"
-              valueStyle={{ color: '#faad14' }}
+              title="Active"
+              value={arbitrageStats.activeOpportunities}
+              valueStyle={{ color: '#52c41a', fontSize: '20px' }}
             />
             <Progress 
-              percent={marketStats.btcDominance} 
+              percent={
+                arbitrageStats.totalOpportunities > 0 
+                  ? (arbitrageStats.activeOpportunities / arbitrageStats.totalOpportunities) * 100 
+                  : 0
+              } 
               showInfo={false}
-              strokeColor="#faad14"
+              size="small"
+              strokeColor="#52c41a"
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
-          <Card className="market-stat-card">
+        <Col xs={12} sm={6}>
+          <Card className="arbitrage-stat-card" size="small">
             <Statistic
-              title="Active Currencies"
-              value={marketStats.activeCurrencies}
-              valueStyle={{ color: '#722ed1' }}
+              title="Avg Profit"
+              value={arbitrageStats.avgProfit.toFixed(2)}
+              suffix="%"
+              valueStyle={{ color: '#faad14', fontSize: '20px' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card className="arbitrage-stat-card" size="small">
+            <Statistic
+              title="Triangular"
+              value={arbitrageStats.triangularCount}
+              valueStyle={{ color: '#722ed1', fontSize: '20px' }}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Market Data Table */}
+      {/* Arbitrage Opportunities Table */}
       <Card 
         title={
-          <Space>
-            <LineChartOutlined />
-            Real-time Market Data
+          <Space size="small">
+            <SwapOutlined />
+            <Text strong>Arbitrage Opportunities</Text>
           </Space>
         }
-        className="market-data-table-card"
+        className="arbitrage-table-card"
+        size="small"
         extra={
-          <Space>
+          <Space size="small">
             <Search
-              placeholder="Search pairs..."
+              placeholder="Search paths..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 200 }}
+              style={{ width: 140 }}
+              size="small"
               prefix={<SearchOutlined />}
             />
             <Select
-              value={selectedExchange}
-              onChange={setSelectedExchange}
+              value={selectedType}
+              onChange={setSelectedType}
               style={{ width: 120 }}
-              placeholder="Exchange"
+              size="small"
+              placeholder="Type"
             >
-              <Option value="all">All Exchanges</Option>
-              <Option value="binance">Binance</Option>
-              <Option value="kraken">Kraken</Option>
-              <Option value="coinbase">Coinbase</Option>
-              <Option value="okx">OKX</Option>
+              <Option value="all">All</Option>
+              <Option value="triangular">Triangular</Option>
+              <Option value="cross-exchange">Cross-Exchange</Option>
             </Select>
           </Space>
         }
@@ -360,19 +356,23 @@ const MarketData = () => {
           columns={columns}
           dataSource={filteredData}
           pagination={false}
-          scroll={{ x: 800 }}
+          scroll={{ x: 600 }}
           size="small"
-          className="market-data-table"
-          rowClassName={(record) => watchlist.has(record.symbol) ? 'watchlist-row' : ''}
+          className="arbitrage-data-table"
+          loading={loading}
+          rowClassName={(record) => `opportunity-row ${record.status || 'unknown'}`}
+          locale={{
+            emptyText: loading ? 'Loading opportunities...' : 'No arbitrage opportunities found'
+          }}
         />
         
-        <div className="market-data-footer">
-          <Text type="secondary">
-            Showing {filteredData.length} of {marketData.length} trading pairs
+        <div className="arbitrage-data-footer">
+          <Text type="secondary" style={{ fontSize: '12px' }}>
+            {filteredData.length} opportunities • Auto-refresh 5s
           </Text>
           <Badge 
             status="processing" 
-            text="Live Data" 
+            text="Live" 
             className="live-badge"
           />
         </div>

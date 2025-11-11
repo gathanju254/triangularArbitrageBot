@@ -1,1 +1,404 @@
-/*frontend/src/components/trading/ManualTrade/ManualTrade.css*/
+/* frontend/src/components/trading/ManualTrading/ManualTrading.css */
+.manual-trading {
+  padding: 0;
+}
+
+/* Card Styles */
+.arbitrage-form-card,
+.arbitrage-info-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  margin-bottom: 0;
+  background: white;
+}
+
+.arbitrage-form-card .ant-card-head,
+.arbitrage-info-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 20px;
+  background: #fafafa;
+}
+
+.arbitrage-form-card .ant-card-body,
+.arbitrage-info-card .ant-card-body {
+  padding: 20px;
+}
+
+/* Card Titles */
+.card-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.live-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+/* Trading Status */
+.trading-status {
+  display: flex;
+  align-items: center;
+}
+
+/* Arbitrage Type Selection */
+.arbitrage-type-section {
+  margin-bottom: 16px;
+}
+
+.arbitrage-type-section .section-label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #262626;
+}
+
+.arbitrage-type-selector {
+  width: 100%;
+  display: flex;
+}
+
+.arbitrage-type-selector .ant-radio-button-wrapper {
+  flex: 1;
+  text-align: center;
+  padding: 12px 16px;
+  font-weight: 500;
+  border-radius: 6px !important;
+  height: auto;
+  line-height: 1.4;
+}
+
+/* Form Items */
+.manual-trading .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.manual-trading .ant-form-item-label > label {
+  font-weight: 600;
+  color: #262626;
+}
+
+/* Arbitrage Strategy Select */
+.arbitrage-strategy-select .ant-select-selector {
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.arbitrage-strategy-select .ant-select-selector:hover {
+  border-color: #40a9ff;
+}
+
+.strategy-option {
+  padding: 8px 0;
+  min-width: 300px;
+}
+
+.strategy-name {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.strategy-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profit-text {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Profit Calculation Section */
+.profit-calculation-section {
+  margin: 20px 0;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.profit-card {
+  border-radius: 8px;
+  border: 1px solid #e8f4fd;
+  background: #f6ffed;
+}
+
+.profit-card .ant-card-head {
+  border-bottom: 1px solid #e8f4fd;
+  padding: 12px 16px;
+  min-height: auto;
+}
+
+.profit-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.execution-info {
+  text-align: center;
+  padding: 8px;
+}
+
+.execution-info :first-child {
+  font-size: 12px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.execution-info :nth-child(2) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1890ff;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.execute-btn {
+  min-width: 200px;
+  height: 44px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #52c41a, #73d13d);
+  border: none;
+  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.3);
+}
+
+.execute-btn:hover {
+  background: linear-gradient(135deg, #73d13d, #52c41a);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Arbitrage Info Card */
+.info-content {
+  padding: 0;
+}
+
+.info-section {
+  margin-bottom: 20px;
+}
+
+.info-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Path Display */
+.path-display {
+  margin-top: 8px;
+}
+
+.path-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.path-step:last-child {
+  margin-bottom: 0;
+}
+
+.path-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.path-arrow {
+  color: #1890ff;
+  font-size: 12px;
+}
+
+.no-selection {
+  font-style: italic;
+  text-align: center;
+  display: block;
+  padding: 20px;
+  color: #8c8c8c;
+}
+
+/* Exchange Status */
+.exchange-status {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.exchange-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+}
+
+.exchange-item:hover {
+  background: #f8f9fa;
+}
+
+.exchange-item:last-child {
+  border-bottom: none;
+}
+
+/* Risk Items */
+.risk-items {
+  margin-top: 8px;
+}
+
+.risk-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.risk-item:last-child {
+  border-bottom: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .arbitrage-form-card .ant-card-body,
+  .arbitrage-info-card .ant-card-body {
+    padding: 16px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .execute-btn {
+    min-width: 100%;
+    order: -1;
+  }
+  
+  .arbitrage-type-selector {
+    flex-direction: column;
+  }
+  
+  .arbitrage-type-selector .ant-radio-button-wrapper {
+    margin-bottom: 8px;
+  }
+  
+  .strategy-option {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .arbitrage-form-card .ant-card-body,
+  .arbitrage-info-card .ant-card-body {
+    padding: 12px;
+  }
+  
+  .arbitrage-type-selector .ant-radio-button-wrapper {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .arbitrage-form-card,
+  .arbitrage-info-card {
+    background: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .arbitrage-form-card .ant-card-head,
+  .arbitrage-info-card .ant-card-head {
+    background: #262626;
+    border-bottom-color: #303030;
+  }
+  
+  .card-title-text {
+    color: #e6e6e6;
+  }
+  
+  .profit-card {
+    background: #1a2a1a;
+    border-color: #274916;
+  }
+  
+  .path-step {
+    background: #262626;
+    border-color: #303030;
+  }
+  
+  .path-text {
+    color: #bfbfbf;
+  }
+  
+  .exchange-item:hover {
+    background: #262626;
+  }
+  
+  .arbitrage-type-selector .ant-radio-button-wrapper {
+    background: #262626;
+    border-color: #434343;
+    color: #e6e6e6;
+  }
+  
+  .arbitrage-type-selector .ant-radio-button-wrapper-checked {
+    background: #1890ff;
+    border-color: #1890ff;
+    color: white;
+  }
+}
+
+/* Focus States for Accessibility */
+.manual-trading .ant-select:focus .ant-select-selector,
+.manual-trading .ant-input-number:focus,
+.manual-trading .ant-radio-button-wrapper:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+/* Disabled state improvements */
+.execute-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  background: #f5f5f5 !important;
+  color: #00000040 !important;
+  border-color: #d9d9d9 !important;
+}
+
+/* Smooth transitions */
+.manual-trading * {
+  transition: all 0.2s ease-in-out;
+}

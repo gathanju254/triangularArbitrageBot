@@ -1,5 +1,5 @@
 // frontend/src/components/trading/shared/TradingViewer/TradingViewer.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Select,
@@ -9,25 +9,23 @@ import {
   Button,
   Space,
   Tooltip,
-  Slider,
   Switch,
   Divider,
-  Segmented,
+  Tag,
   Timeline,
   Statistic,
-  Tag
+  Progress,
+  Alert
 } from 'antd';
 import {
   LineChartOutlined,
-  BarChartOutlined,
-  AreaChartOutlined,
-  SettingOutlined,
-  ExpandOutlined,
-  DownloadOutlined,
-  ShareAltOutlined,
-  BellOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
   PlayCircleOutlined,
-  PauseCircleOutlined
+  PauseCircleOutlined,
+  RocketOutlined,
+  SwapOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import './TradingViewer.css';
 
@@ -35,303 +33,366 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const TradingViewer = () => {
-  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
-  const [timeframe, setTimeframe] = useState('1h');
-  const [chartType, setChartType] = useState('candlestick');
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [indicators, setIndicators] = useState(['sma', 'volume']);
-  const [drawingTool, setDrawingTool] = useState(null);
-  const [chartData, setChartData] = useState([]);
-  const chartRef = useRef(null);
+  const [selectedArbitrage, setSelectedArbitrage] = useState('triangular');
+  const [isLive, setIsLive] = useState(false);
+  const [opportunities, setOpportunities] = useState([]);
+  const [activeTrades, setActiveTrades] = useState([]);
 
-  const tradingPairs = [
-    { value: 'BTCUSDT', label: 'BTC/USDT', price: 43250.75, change: 2.45 },
-    { value: 'ETHUSDT', label: 'ETH/USDT', price: 2580.30, change: -1.23 },
-    { value: 'SOLUSDT', label: 'SOL/USDT', price: 98.45, change: 5.67 },
-    { value: 'ADAUSDT', label: 'ADA/USDT', price: 0.52, change: -0.89 },
-    { value: 'DOTUSDT', label: 'DOT/USDT', price: 7.23, change: 1.34 }
+  const arbitrageTypes = [
+    { value: 'triangular', label: 'Triangular Arbitrage', icon: <SwapOutlined /> },
+    { value: 'cross-exchange', label: 'Cross-Exchange', icon: <RocketOutlined /> }
   ];
 
-  const timeframes = [
-    { value: '1m', label: '1m' },
-    { value: '5m', label: '5m' },
-    { value: '15m', label: '15m' },
-    { value: '1h', label: '1h' },
-    { value: '4h', label: '4h' },
-    { value: '1d', label: '1d' },
-    { value: '1w', label: '1w' }
+  const exchanges = ['Binance', 'OKX', 'KuCoin', 'Coinbase', 'Kraken', 'Huobi'];
+
+  // Mock triangular arbitrage opportunities
+  const triangularOpportunities = [
+    {
+      id: 1,
+      path: 'BTC → ETH → USDT → BTC',
+      profit: 1.25,
+      volume: 15000,
+      timeframe: '15s',
+      exchanges: ['Binance'],
+      status: 'high'
+    },
+    {
+      id: 2,
+      path: 'ETH → SOL → USDT → ETH',
+      profit: 0.89,
+      volume: 8500,
+      timeframe: '12s',
+      exchanges: ['OKX', 'Binance'],
+      status: 'medium'
+    },
+    {
+      id: 3,
+      path: 'SOL → ADA → USDT → SOL',
+      profit: 2.15,
+      volume: 3200,
+      timeframe: '18s',
+      exchanges: ['KuCoin'],
+      status: 'high'
+    }
   ];
 
-  const chartTypes = [
-    { value: 'candlestick', label: 'Candlestick', icon: <BarChartOutlined /> },
-    { value: 'line', label: 'Line', icon: <LineChartOutlined /> },
-    { value: 'area', label: 'Area', icon: <AreaChartOutlined /> },
-    { value: 'heikin-ashi', label: 'Heikin Ashi', icon: <BarChartOutlined /> }
+  // Mock cross-exchange opportunities
+  const crossExchangeOpportunities = [
+    {
+      id: 1,
+      pair: 'BTC/USDT',
+      buyExchange: 'Binance',
+      sellExchange: 'OKX',
+      priceDiff: 45.50,
+      spread: 0.12,
+      volume: 25000,
+      status: 'high'
+    },
+    {
+      id: 2,
+      pair: 'ETH/USDT',
+      buyExchange: 'Coinbase',
+      sellExchange: 'Kraken',
+      priceDiff: 12.30,
+      spread: 0.08,
+      volume: 18000,
+      status: 'medium'
+    },
+    {
+      id: 3,
+      pair: 'SOL/USDT',
+      buyExchange: 'Huobi',
+      sellExchange: 'KuCoin',
+      priceDiff: 3.45,
+      spread: 0.15,
+      volume: 9500,
+      status: 'low'
+    }
   ];
 
-  const technicalIndicators = [
-    { value: 'sma', label: 'SMA', enabled: true },
-    { value: 'ema', label: 'EMA', enabled: false },
-    { value: 'rsi', label: 'RSI', enabled: false },
-    { value: 'macd', label: 'MACD', enabled: false },
-    { value: 'bollinger', label: 'Bollinger Bands', enabled: false },
-    { value: 'volume', label: 'Volume', enabled: true }
-  ];
-
-  const drawingTools = [
-    { value: 'trendline', label: 'Trend Line' },
-    { value: 'horizontal', label: 'Horizontal Line' },
-    { value: 'fibonacci', label: 'Fibonacci' },
-    { value: 'rectangle', label: 'Rectangle' },
-    { value: 'ellipse', label: 'Ellipse' }
-  ];
-
-  // Mock chart data
   useEffect(() => {
-    generateChartData();
-    const interval = setInterval(() => {
-      if (isPlaying) {
-        updateChartData();
+    setOpportunities(selectedArbitrage === 'triangular' ? triangularOpportunities : crossExchangeOpportunities);
+    
+    // Mock active trades
+    setActiveTrades([
+      {
+        id: 1,
+        type: 'triangular',
+        path: 'BTC → ETH → USDT → BTC',
+        profit: 0.75,
+        status: 'executing',
+        progress: 65,
+        exchanges: ['Binance']
+      },
+      {
+        id: 2,
+        type: 'cross-exchange',
+        pair: 'ETH/USDT',
+        action: 'Buy on Coinbase → Sell on Kraken',
+        profit: 0.42,
+        status: 'completed',
+        progress: 100,
+        exchanges: ['Coinbase', 'Kraken']
       }
-    }, 2000);
+    ]);
+  }, [selectedArbitrage]);
 
-    return () => clearInterval(interval);
-  }, [isPlaying, selectedSymbol, timeframe]);
-
-  const generateChartData = () => {
-    const data = [];
-    const basePrice = tradingPairs.find(p => p.value === selectedSymbol)?.price || 100;
-    
-    for (let i = 0; i < 50; i++) {
-      const open = basePrice + (Math.random() - 0.5) * basePrice * 0.02;
-      const close = open + (Math.random() - 0.5) * basePrice * 0.01;
-      const high = Math.max(open, close) + Math.random() * basePrice * 0.005;
-      const low = Math.min(open, close) - Math.random() * basePrice * 0.005;
-      const volume = Math.random() * 1000 + 500;
-
-      data.push({
-        time: i,
-        open,
-        high,
-        low,
-        close,
-        volume
-      });
-    }
-    
-    setChartData(data);
+  const getProfitColor = (profit) => {
+    if (profit > 2) return '#52c41a';
+    if (profit > 1) return '#faad14';
+    return '#ff4d4f';
   };
 
-  const updateChartData = () => {
-    if (chartData.length > 0) {
-      const lastCandle = chartData[chartData.length - 1];
-      const newCandle = {
-        time: lastCandle.time + 1,
-        open: lastCandle.close,
-        close: lastCandle.close + (Math.random() - 0.5) * lastCandle.close * 0.01,
-        high: 0,
-        low: 0,
-        volume: Math.random() * 1000 + 500
-      };
-      
-      newCandle.high = Math.max(newCandle.open, newCandle.close) + Math.random() * newCandle.close * 0.005;
-      newCandle.low = Math.min(newCandle.open, newCandle.close) - Math.random() * newCandle.close * 0.005;
-
-      setChartData(prev => [...prev.slice(1), newCandle]);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'high': return 'green';
+      case 'medium': return 'orange';
+      case 'low': return 'red';
+      default: return 'blue';
     }
   };
 
-  const toggleIndicator = (indicator) => {
-    setIndicators(prev => 
-      prev.includes(indicator) 
-        ? prev.filter(i => i !== indicator)
-        : [...prev, indicator]
-    );
-  };
+  const renderTriangularOpportunity = (opp) => (
+    <Card key={opp.id} size="small" className="opportunity-card">
+      <Row gutter={[8, 8]} align="middle">
+        <Col span={24}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div className="opportunity-header">
+              <Text strong>{opp.path}</Text>
+              <Tag color={getStatusColor(opp.status)}>
+                {opp.profit}% Profit
+              </Tag>
+            </div>
+            
+            <div className="opportunity-details">
+              <Space size="large">
+                <Text type="secondary">Volume: ${opp.volume.toLocaleString()}</Text>
+                <Text type="secondary">Cycle: {opp.timeframe}</Text>
+              </Space>
+            </div>
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-  };
+            <div className="exchange-tags">
+              {opp.exchanges.map(exchange => (
+                <Tag key={exchange} color="blue" size="small">
+                  {exchange}
+                </Tag>
+              ))}
+            </div>
 
-  const getCurrentPriceInfo = () => {
-    const pair = tradingPairs.find(p => p.value === selectedSymbol);
-    return pair || { price: 0, change: 0 };
-  };
+            <Button type="primary" size="small" block>
+              Execute Trade
+            </Button>
+          </Space>
+        </Col>
+      </Row>
+    </Card>
+  );
 
-  const currentPriceInfo = getCurrentPriceInfo();
+  const renderCrossExchangeOpportunity = (opp) => (
+    <Card key={opp.id} size="small" className="opportunity-card">
+      <Row gutter={[8, 8]} align="middle">
+        <Col span={24}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div className="opportunity-header">
+              <Text strong>{opp.pair}</Text>
+              <Tag color={getStatusColor(opp.status)}>
+                ${opp.priceDiff} Diff
+              </Tag>
+            </div>
+            
+            <div className="exchange-flow">
+              <Space>
+                <Text type="secondary">Buy:</Text>
+                <Tag color="green">{opp.buyExchange}</Tag>
+                <Text type="secondary">→ Sell:</Text>
+                <Tag color="red">{opp.sellExchange}</Tag>
+              </Space>
+            </div>
+
+            <div className="opportunity-details">
+              <Space size="large">
+                <Text type="secondary">Spread: {opp.spread}%</Text>
+                <Text type="secondary">Volume: ${opp.volume.toLocaleString()}</Text>
+              </Space>
+            </div>
+
+            <Button type="primary" size="small" block>
+              Execute Arbitrage
+            </Button>
+          </Space>
+        </Col>
+      </Row>
+    </Card>
+  );
 
   return (
-    <div className="trading-viewer">
-      {/* Chart Header */}
-      <Card className="chart-header-card">
+    <div className="arbitrage-viewer">
+      {/* Header Controls */}
+      <Card className="controls-card">
         <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <Space size="large">
+              <Text strong>Arbitrage Type:</Text>
               <Select
-                value={selectedSymbol}
-                onChange={setSelectedSymbol}
-                className="symbol-select"
-                dropdownMatchSelectWidth={200}
+                value={selectedArbitrage}
+                onChange={setSelectedArbitrage}
+                className="arbitrage-select"
+                style={{ width: 200 }}
               >
-                {tradingPairs.map(pair => (
-                  <Option key={pair.value} value={pair.value}>
+                {arbitrageTypes.map(type => (
+                  <Option key={type.value} value={type.value}>
                     <Space>
-                      <Text strong>{pair.label}</Text>
-                      <Tag color={pair.change >= 0 ? 'green' : 'red'}>
-                        {pair.change >= 0 ? '+' : ''}{pair.change}%
-                      </Tag>
+                      {type.icon}
+                      {type.label}
                     </Space>
                   </Option>
                 ))}
               </Select>
-
-              <Segmented
-                value={timeframe}
-                onChange={setTimeframe}
-                options={timeframes}
-                size="small"
-              />
             </Space>
           </Col>
 
-          <Col xs={24} md={8} className="price-display">
-            <Space direction="vertical" size={0} align="center">
-              <Title level={3} style={{ margin: 0, color: currentPriceInfo.change >= 0 ? '#52c41a' : '#ff4d4f' }}>
-                ${currentPriceInfo.price.toLocaleString()}
-              </Title>
-              <Text type={currentPriceInfo.change >= 0 ? 'success' : 'danger'}>
-                {currentPriceInfo.change >= 0 ? '+' : ''}{currentPriceInfo.change}%
-              </Text>
-            </Space>
-          </Col>
-
-          <Col xs={24} md={8}>
-            <Space size="middle" className="chart-controls">
-              <Segmented
-                value={chartType}
-                onChange={setChartType}
-                options={chartTypes.map(type => ({
-                  value: type.value,
-                  label: (
-                    <Tooltip title={type.label}>
-                      {type.icon}
-                    </Tooltip>
-                  )
-                }))}
-                size="small"
+          <Col xs={24} md={12}>
+            <Space size="middle" className="live-controls">
+              <Switch
+                checked={isLive}
+                onChange={setIsLive}
+                checkedChildren="Live"
+                unCheckedChildren="Paused"
               />
-
-              <Tooltip title={isPlaying ? 'Pause' : 'Play'}>
+              <Tooltip title={isLive ? 'Pause scanning' : 'Start live scanning'}>
                 <Button
-                  type="text"
-                  icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-                  onClick={togglePlay}
-                  className={isPlaying ? 'playing' : ''}
-                />
-              </Tooltip>
-
-              <Tooltip title="Settings">
-                <Button type="text" icon={<SettingOutlined />} />
-              </Tooltip>
-
-              <Tooltip title="Fullscreen">
-                <Button type="text" icon={<ExpandOutlined />} />
+                  type={isLive ? 'primary' : 'default'}
+                  icon={isLive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+                  onClick={() => setIsLive(!isLive)}
+                >
+                  {isLive ? 'Live' : 'Paused'}
+                </Button>
               </Tooltip>
             </Space>
           </Col>
         </Row>
       </Card>
 
-      {/* Main Chart Area */}
+      {/* Main Content */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} lg={18}>
-          <Card className="chart-container-card">
-            <div className="chart-wrapper">
-              {/* Mock Chart Visualization */}
-              <div className="mock-chart" ref={chartRef}>
-                <div className="chart-placeholder">
-                  <LineChartOutlined className="chart-placeholder-icon" />
-                  <Title level={4} type="secondary">
-                    Advanced Chart Visualization
-                  </Title>
-                  <Text type="secondary">
-                    {selectedSymbol} - {timeframe} - {chartType}
-                  </Text>
-                  <div className="chart-grid">
-                    {chartData.map((candle, index) => (
-                      <div
-                        key={index}
-                        className={`candle ${candle.close >= candle.open ? 'up' : 'down'}`}
-                        style={{
-                          left: `${(index / chartData.length) * 100}%`,
-                          height: `${Math.abs(candle.high - candle.low) / 2}%`,
-                          bottom: `${Math.min(candle.open, candle.close)}%`
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Indicators Legend */}
-              {indicators.length > 0 && (
-                <div className="indicators-legend">
-                  <Space size="small">
-                    <Text type="secondary">Indicators:</Text>
-                    {indicators.map(indicator => (
-                      <Tag key={indicator} color="blue" size="small">
-                        {technicalIndicators.find(i => i.value === indicator)?.label}
-                      </Tag>
-                    ))}
-                  </Space>
-                </div>
+        {/* Opportunities Panel */}
+        <Col xs={24} lg={16}>
+          <Card 
+            title={
+              <Space>
+                <DollarOutlined />
+                {selectedArbitrage === 'triangular' ? 'Triangular Arbitrage Opportunities' : 'Cross-Exchange Opportunities'}
+              </Space>
+            }
+            className="opportunities-panel"
+          >
+            <div className="opportunities-grid">
+              {opportunities.map(opp => 
+                selectedArbitrage === 'triangular' 
+                  ? renderTriangularOpportunity(opp)
+                  : renderCrossExchangeOpportunity(opp)
               )}
             </div>
+
+            {opportunities.length === 0 && (
+              <div className="no-opportunities">
+                <LineChartOutlined className="no-data-icon" />
+                <Text type="secondary">No arbitrage opportunities found</Text>
+                <Text type="secondary" className="no-data-subtitle">
+                  {isLive ? 'Scanning markets...' : 'Start live scanning to find opportunities'}
+                </Text>
+              </div>
+            )}
           </Card>
         </Col>
 
-        <Col xs={24} lg={6}>
-          {/* Technical Indicators Panel */}
+        {/* Active Trades & Stats */}
+        <Col xs={24} lg={8}>
+          {/* Active Trades */}
           <Card 
-            title="Technical Indicators" 
-            size="small"
-            className="indicators-panel"
+            title="Active Trades" 
+            className="active-trades-panel"
+          >
+            {activeTrades.length > 0 ? (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {activeTrades.map(trade => (
+                  <Card key={trade.id} size="small" className="active-trade-card">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div className="trade-header">
+                        <Text strong>
+                          {trade.type === 'triangular' ? trade.path : trade.pair}
+                        </Text>
+                        <Tag color={trade.status === 'completed' ? 'green' : 'blue'}>
+                          {trade.status}
+                        </Tag>
+                      </div>
+                      
+                      {trade.type === 'cross-exchange' && (
+                        <Text type="secondary" className="trade-action">
+                          {trade.action}
+                        </Text>
+                      )}
+
+                      <div className="trade-progress">
+                        <Progress 
+                          percent={trade.progress} 
+                          size="small" 
+                          status={trade.status === 'completed' ? 'success' : 'active'}
+                        />
+                      </div>
+
+                      <div className="trade-profit">
+                        <Text strong style={{ color: getProfitColor(trade.profit) }}>
+                          +{trade.profit}%
+                        </Text>
+                        <div className="exchange-tags">
+                          {trade.exchanges.map(exchange => (
+                            <Tag key={exchange} color="blue" size="small">
+                              {exchange}
+                            </Tag>
+                          ))}
+                        </div>
+                      </div>
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            ) : (
+              <div className="no-active-trades">
+                <Text type="secondary">No active trades</Text>
+              </div>
+            )}
+          </Card>
+
+          {/* Quick Stats */}
+          <Card 
+            title="Quick Stats" 
+            className="stats-panel"
+            style={{ marginTop: 16 }}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
-              {technicalIndicators.map(indicator => (
-                <div key={indicator.value} className="indicator-item">
-                  <Switch
-                    size="small"
-                    checked={indicators.includes(indicator.value)}
-                    onChange={() => toggleIndicator(indicator.value)}
-                  />
-                  <Text>{indicator.label}</Text>
-                </div>
-              ))}
-            </Space>
-
-            <Divider />
-
-            <Title level={5}>Drawing Tools</Title>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              {drawingTools.map(tool => (
-                <Button
-                  key={tool.value}
-                  type={drawingTool === tool.value ? 'primary' : 'default'}
-                  size="small"
-                  block
-                  onClick={() => setDrawingTool(tool.value)}
-                >
-                  {tool.label}
-                </Button>
-              ))}
+              <Statistic
+                title="Total Opportunities"
+                value={opportunities.length}
+                prefix={<RocketOutlined />}
+              />
+              <Statistic
+                title="Best Profit"
+                value={Math.max(...opportunities.map(o => o.profit))}
+                suffix="%"
+                valueStyle={{ color: getProfitColor(Math.max(...opportunities.map(o => o.profit))) }}
+              />
+              <Statistic
+                title="Active Trades"
+                value={activeTrades.length}
+                prefix={<SwapOutlined />}
+              />
             </Space>
           </Card>
 
           {/* Recent Activity */}
           <Card 
             title="Recent Activity" 
-            size="small"
             className="activity-panel"
             style={{ marginTop: 16 }}
           >
@@ -341,8 +402,9 @@ const TradingViewer = () => {
                   color: 'green',
                   children: (
                     <Space direction="vertical" size={0}>
-                      <Text strong>Price Alert</Text>
-                      <Text type="secondary">BTC broke resistance at $43,000</Text>
+                      <Text strong>Triangular Arbitrage</Text>
+                      <Text type="secondary">BTC → ETH → USDT → BTC completed</Text>
+                      <Text type="secondary" className="activity-profit">+1.25% profit</Text>
                     </Space>
                   ),
                 },
@@ -350,8 +412,9 @@ const TradingViewer = () => {
                   color: 'blue',
                   children: (
                     <Space direction="vertical" size={0}>
-                      <Text strong>Pattern Detected</Text>
-                      <Text type="secondary">Bullish engulfing on 1H</Text>
+                      <Text strong>Cross-Exchange</Text>
+                      <Text type="secondary">ETH arbitrage Binance → OKX</Text>
+                      <Text type="secondary" className="activity-profit">+0.89% profit</Text>
                     </Space>
                   ),
                 },
@@ -359,8 +422,8 @@ const TradingViewer = () => {
                   color: 'orange',
                   children: (
                     <Space direction="vertical" size={0}>
-                      <Text strong>Volume Spike</Text>
-                      <Text type="secondary">Unusual volume detected</Text>
+                      <Text strong>Opportunity Found</Text>
+                      <Text type="secondary">New triangular path detected</Text>
                     </Space>
                   ),
                 },
@@ -370,35 +433,16 @@ const TradingViewer = () => {
         </Col>
       </Row>
 
-      {/* Chart Footer */}
-      <Card size="small" className="chart-footer">
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={8}>
-            <Space>
-              <Text type="secondary">Drawing:</Text>
-              <Text>{drawingTool || 'None'}</Text>
-            </Space>
-          </Col>
-          <Col xs={24} sm={8} className="footer-center">
-            <Space>
-              <Button type="text" icon={<DownloadOutlined />} size="small">
-                Export
-              </Button>
-              <Button type="text" icon={<ShareAltOutlined />} size="small">
-                Share
-              </Button>
-              <Button type="text" icon={<BellOutlined />} size="small">
-                Alert
-              </Button>
-            </Space>
-          </Col>
-          <Col xs={24} sm={8} className="footer-right">
-            <Text type="secondary">
-              Data: Live • Updated: Just now
-            </Text>
-          </Col>
-        </Row>
-      </Card>
+      {/* Status Footer */}
+      {isLive && (
+        <Alert
+          message="Live Scanning Active"
+          description={`Scanning ${exchanges.length} exchanges for ${selectedArbitrage} arbitrage opportunities`}
+          type="info"
+          showIcon
+          className="status-alert"
+        />
+      )}
     </div>
   );
 };

@@ -1,1 +1,173 @@
-/*frontend/src/components/trading/AutoTrading/StrategyConfig/StrategyConfig.css*/
+/* frontend/src/components/trading/AutoTrading/StrategyConfig/StrategyConfig.css */
+.strategy-config {
+  padding: 0;
+}
+
+/* Config Card */
+.config-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  min-height: 500px;
+}
+
+.strategy-form {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Scrollbar Styling */
+.strategy-form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.strategy-form::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.strategy-form::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.strategy-form::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Form Elements */
+.strategy-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #262626;
+}
+
+.strategy-form .ant-input-number,
+.strategy-form .ant-select-selector {
+  border-radius: 6px;
+}
+
+.strategy-form .ant-slider {
+  margin: 8px 6px 16px;
+}
+
+/* Tabs Styling */
+.strategy-form .ant-tabs-tab {
+  padding: 12px 20px;
+  font-weight: 500;
+  border-radius: 6px 6px 0 0;
+}
+
+.strategy-form .ant-tabs-tab-active {
+  background: #f0f8ff;
+}
+
+.strategy-form .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+/* Quick Stats */
+.quick-stats {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.quick-stats .ant-typography {
+  margin-bottom: 8px !important;
+}
+
+.quick-stats .ant-space {
+  margin-top: 8px;
+}
+
+/* Alert Styling */
+.strategy-form .ant-alert {
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .strategy-form {
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .strategy-form .ant-tabs-tab {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .config-card .ant-card-head-title {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .strategy-form .ant-tabs-nav-wrap {
+    flex-direction: column;
+  }
+  
+  .strategy-form .ant-tabs-tab {
+    margin-bottom: 4px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .config-card {
+    background: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .strategy-form .ant-form-item-label > label {
+    color: #e8e8e8;
+  }
+  
+  .strategy-form .ant-tabs-tab-active {
+    background: #1a3b5a;
+  }
+  
+  .strategy-form::-webkit-scrollbar-track {
+    background: #2a2a2a;
+  }
+  
+  .strategy-form::-webkit-scrollbar-thumb {
+    background: #555;
+  }
+  
+  .quick-stats {
+    background: #262626;
+    border-color: #303030;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .strategy-form .ant-tabs-ink-bar {
+    transition: none;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.strategy-form .ant-select-selector:focus,
+.strategy-form .ant-input-number:focus,
+.strategy-form .ant-input-number-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Print Styles */
+@media print {
+  .config-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .strategy-form .ant-tabs-nav {
+    display: none;
+  }
+}

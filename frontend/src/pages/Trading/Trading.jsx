@@ -181,24 +181,8 @@ const Trading = () => {
             key="manual"
           >
             <div className="trading-tab-content">
-              <Row gutter={[24, 24]}>
-                <Col xs={24} lg={16}>
-                  <Card 
-                    title="Trading Interface" 
-                    className="trading-interface-card"
-                  >
-                    <ManualTrading />
-                  </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Card 
-                    title="Market Data" 
-                    className="market-data-card"
-                  >
-                    <MarketData />
-                  </Card>
-                </Col>
-              </Row>
+              {/* Manual Trading takes full width */}
+              <ManualTrading />
             </div>
           </TabPane>
 
@@ -212,39 +196,34 @@ const Trading = () => {
             }
             key="auto"
           >
-            <div className="trading-tab-content">
-              <Row gutter={[24, 24]}>
-                <Col xs={24} lg={8}>
-                  <Card 
-                    title="Bot Controls" 
-                    className="bot-controls-card"
-                  >
-                    <BotControls 
-                      onStatusChange={handleBotStatusChange}
-                      initialStatus={tradingStatus}
-                    />
-                  </Card>
-                </Col>
-                <Col xs={24} lg={16}>
-                  <Card 
-                    title="Strategy Configuration" 
-                    className="strategy-config-card"
-                  >
-                    <StrategyConfig />
-                  </Card>
-                </Col>
-              </Row>
+            <div className="trading-tab-content auto-trading-content">
+              {/* Bot Controls - Full Width */}
+              <div className="bot-controls-fullwidth">
+                <BotControls 
+                  onStatusChange={handleBotStatusChange}
+                  initialStatus={tradingStatus}
+                />
+              </div>
+
+              {/* Strategy Configuration - Full Width */}
+              <div className="strategy-config-fullwidth" style={{ marginTop: 24 }}>
+                <Card 
+                  title="Strategy Configuration" 
+                  className="strategy-config-card"
+                >
+                  <StrategyConfig />
+                </Card>
+              </div>
               
-              <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                <Col xs={24}>
-                  <Card 
-                    title="Performance Metrics" 
-                    className="performance-metrics-card"
-                  >
-                    <PerformanceMetrics />
-                  </Card>
-                </Col>
-              </Row>
+              {/* Performance Metrics - Full Width */}
+              <div style={{ marginTop: 24 }}>
+                <Card 
+                  title="Performance Metrics" 
+                  className="performance-metrics-card"
+                >
+                  <PerformanceMetrics />
+                </Card>
+              </div>
             </div>
           </TabPane>
 

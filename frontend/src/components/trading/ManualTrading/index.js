@@ -1,2 +1,2 @@
-/// frontend/src/components/trading/ManualTrade/index.js
-export { default } from './ManualTrade'
+/// frontend/src/components/trading/ManualTrading/index.js
+export { default } from './ManualTrading'

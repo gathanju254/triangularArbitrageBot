@@ -1,1 +1,251 @@
 /* frontend/src/components/trading/shared/TradingViewer/TradingViewer.css */
+.arbitrage-viewer {
+  padding: 0;
+}
+
+/* Controls Card */
+.controls-card {
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.arbitrage-select .ant-select-selector {
+  border-radius: 6px;
+}
+
+.live-controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Opportunities Panel */
+.opportunities-panel {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 500px;
+}
+
+.opportunities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.opportunity-card {
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.opportunity-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.opportunity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.opportunity-details {
+  margin: 8px 0;
+}
+
+.exchange-tags {
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.exchange-flow {
+  margin: 8px 0;
+}
+
+/* Active Trades */
+.active-trades-panel {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.active-trade-card {
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+}
+
+.active-trade-card:last-child {
+  margin-bottom: 0;
+}
+
+.trade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.trade-action {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.trade-progress {
+  margin: 8px 0;
+}
+
+.trade-profit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* Stats Panel */
+.stats-panel {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-panel .ant-statistic {
+  text-align: center;
+}
+
+.stats-panel .ant-statistic-title {
+  font-size: 12px;
+  color: #666;
+}
+
+.stats-panel .ant-statistic-content {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Activity Panel */
+.activity-panel {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.activity-profit {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Empty States */
+.no-opportunities,
+.no-active-trades {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.no-data-icon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+.no-data-subtitle {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Status Alert */
+.status-alert {
+  border-radius: 6px;
+  margin-top: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .opportunities-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .live-controls {
+    justify-content: flex-start;
+    margin-top: 8px;
+  }
+  
+  .opportunity-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .trade-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .trade-profit {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .controls-card,
+  .opportunities-panel,
+  .active-trades-panel,
+  .stats-panel,
+  .activity-panel {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .opportunity-card,
+  .active-trade-card {
+    background-color: #262626;
+    border-color: #303030;
+  }
+  
+  .no-data-icon {
+    color: #434343;
+  }
+}
+
+/* Animation for live scanning */
+@keyframes live-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.live-controls .ant-btn-primary {
+  animation: live-pulse 2s infinite;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .opportunity-card,
+  .active-trade-card {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .opportunity-card {
+    transition: none;
+  }
+  
+  .opportunity-card:hover {
+    transform: none;
+  }
+  
+  .live-controls .ant-btn-primary {
+    animation: none;
+  }
+}

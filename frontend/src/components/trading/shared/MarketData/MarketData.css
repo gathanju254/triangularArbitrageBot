@@ -1,1 +1,273 @@
 /* frontend/src/components/trading/shared/MarketData/MarketData.css */
+.arbitrage-market-data {
+  padding: 0;
+}
+
+/* Overview Section */
+.arbitrage-overview {
+  margin-bottom: 16px;
+}
+
+.arbitrage-stat-card {
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.arbitrage-stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.arbitrage-stat-card .ant-statistic-title {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.arbitrage-stat-card .ant-statistic-content {
+  padding: 4px 0;
+}
+
+/* Table Card */
+.arbitrage-table-card {
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+}
+
+.arbitrage-table-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+.arbitrage-table-card .ant-card-head-title {
+  font-weight: 600;
+  color: #262626;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.arbitrage-table-card .ant-card-body {
+  padding: 12px;
+}
+
+/* Table Styling */
+.arbitrage-data-table {
+  margin-top: 8px;
+}
+
+.arbitrage-data-table .ant-table-thead > tr > th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #262626;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 8px;
+  font-size: 12px;
+}
+
+.arbitrage-data-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 8px;
+  font-size: 12px;
+}
+
+/* Row Styling */
+.opportunity-row:hover td {
+  background-color: #f6ffed !important;
+}
+
+.opportunity-row.high td {
+  background-color: #fff2f0;
+  border-left: 3px solid #ff4d4f;
+}
+
+.opportunity-row.active td {
+  background-color: #f6ffed;
+  border-left: 3px solid #52c41a;
+}
+
+.opportunity-row.medium td {
+  background-color: #fffbe6;
+  border-left: 3px solid #faad14;
+}
+
+/* Path and Exchange Styling */
+.path-text {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  color: #262626;
+  font-weight: 600;
+}
+
+.exchanges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.exchanges .ant-tag {
+  margin: 0;
+  font-size: 9px;
+  padding: 0 4px;
+  border: none;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+/* Footer */
+.arbitrage-data-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.live-badge .ant-badge-status-text {
+  font-size: 11px;
+  color: #52c41a;
+  font-weight: 600;
+}
+
+/* Status Tags */
+.ant-tag {
+  border: none;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .arbitrage-overview .ant-col {
+    margin-bottom: 8px;
+  }
+  
+  .arbitrage-table-card .ant-card-extra {
+    margin-top: 8px;
+    width: 100%;
+  }
+  
+  .arbitrage-table-card .ant-card-extra .ant-space {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .arbitrage-data-table {
+    font-size: 11px;
+  }
+  
+  .path-text {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .arbitrage-market-data {
+    padding: 4px;
+  }
+  
+  .arbitrage-data-footer {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+  
+  .exchanges {
+    justify-content: center;
+  }
+  
+  .arbitrage-stat-card .ant-statistic-title {
+    font-size: 11px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .arbitrage-stat-card,
+  .arbitrage-table-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .arbitrage-table-card .ant-card-head {
+    background: #262626;
+    border-bottom-color: #303030;
+  }
+  
+  .arbitrage-table-card .ant-card-head-title {
+    color: #e6e6e6;
+  }
+  
+  .arbitrage-data-table .ant-table-thead > tr > th {
+    background: #262626;
+    color: #e6e6e6;
+    border-bottom-color: #303030;
+  }
+  
+  .arbitrage-data-table .ant-table-tbody > tr > td {
+    border-bottom-color: #303030;
+    background-color: #1f1f1f;
+    color: #e6e6e6;
+  }
+  
+  .path-text {
+    color: #e6e6e6;
+  }
+  
+  .exchanges .ant-tag {
+    background: #303030;
+    color: #bfbfbf;
+  }
+  
+  .opportunity-row:hover td {
+    background-color: #1f2f1f !important;
+  }
+  
+  .opportunity-row.high td {
+    background-color: #2f1f1f;
+  }
+  
+  .opportunity-row.medium td {
+    background-color: #2f2f1f;
+  }
+  
+  .opportunity-row.active td {
+    background-color: #1f2f1f;
+  }
+}
+
+/* Animation for new opportunities */
+@keyframes highlight-new {
+  0% { background-color: #f6ffed; }
+  50% { background-color: #e6f7ff; }
+  100% { background-color: transparent; }
+}
+
+.new-opportunity {
+  animation: highlight-new 2s ease-in-out;
+}
+
+/* Focus styles for accessibility */
+.arbitrage-data-table .ant-table-row:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: -2px;
+}
+
+/* Print styles */
+@media print {
+  .arbitrage-stat-card,
+  .arbitrage-table-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .arbitrage-data-footer {
+    display: none;
+  }
+}
