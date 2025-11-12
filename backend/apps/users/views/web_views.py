@@ -16,8 +16,8 @@ from ..serializers import (
     ExchangeCredentialsSerializer
 )
 from ..services.user_service import UserService
-from apps.arbitrage_bot.exchanges.binance import BinanceClient
-from apps.arbitrage_bot.exchanges.kraken import KrakenClient
+from apps.exchanges.connectors.binance import BinanceConnector
+from apps.exchanges.connectors.kraken import KrakenConnector
 
 logger = logging.getLogger(__name__)
 
@@ -237,11 +237,11 @@ def validate_exchange_credentials(request):
         # Test connection using existing exchange clients
         if exchange.lower() == 'binance':
             # Create a temporary Binance client for testing
-            client = BinanceClient()
+            client = BinanceConnector()
             result = client.test_connection()
         elif exchange.lower() == 'kraken':
             # Create a temporary Kraken client for testing  
-            client = KrakenClient()
+            client = KrakenConnector()
             result = client.test_connection()
         else:
             return Response({

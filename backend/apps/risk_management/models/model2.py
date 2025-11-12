@@ -1,1 +1,0 @@
-# backend/apps/risk_management/models/model2.py

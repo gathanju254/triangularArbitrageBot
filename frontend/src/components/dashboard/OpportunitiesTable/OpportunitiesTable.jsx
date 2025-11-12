@@ -1,6 +1,6 @@
 // frontend/src/components/dashboard/OpportunitiesTable/OpportunitiesTable.jsx
 import React from 'react';
-import { Table, Tag, Space, Typography, Tooltip } from 'antd';
+import { Table, Tag, Space, Typography, Tooltip, Badge } from 'antd';
 import { ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import './OpportunitiesTable.css';
 
@@ -9,20 +9,27 @@ const { Text } = Typography;
 const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }) => {
   const columns = [
     {
-      title: 'Symbol',
-      dataIndex: 'symbol',
-      key: 'symbol',
-      width: 100,
-      render: (symbol) => <Text strong>{symbol}</Text>,
+      title: 'Triangle Path',
+      dataIndex: 'triangle',
+      key: 'triangle',
+      width: 200,
+      render: (triangle) => (
+        <Tooltip title={triangle?.join(' → ')}>
+          <Text strong style={{ fontSize: '12px' }}>
+            {triangle?.map(pair => pair.split('/')[0]).join(' → ')}
+          </Text>
+        </Tooltip>
+      ),
     },
     {
       title: 'Profit %',
       dataIndex: 'profit_percentage',
       key: 'profit_percentage',
       width: 120,
-      render: (percentage) => {
+      render: (percentage, record) => {
         const profitValue = typeof percentage === 'number' ? percentage : 0;
         const isPositive = profitValue > 0;
+        const isHighProfit = profitValue > 1.0;
         
         return (
           <Space>
@@ -30,35 +37,42 @@ const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }
               <ArrowUpOutlined style={{ color: '#52c41a' }} /> : 
               <ArrowDownOutlined style={{ color: '#ff4d4f' }} />
             }
-            <Text 
-              strong 
+            <Badge 
+              count={isHighProfit ? "HIGH" : null} 
+              size="small" 
               style={{ 
-                color: isPositive ? '#52c41a' : '#ff4d4f',
-                fontSize: '14px'
+                backgroundColor: isHighProfit ? '#ff4d4f' : 'transparent',
+                marginRight: isHighProfit ? 8 : 0
               }}
             >
-              {profitValue.toFixed(2)}%
-            </Text>
+              <Text 
+                strong 
+                style={{ 
+                  color: isPositive ? '#52c41a' : '#ff4d4f',
+                  fontSize: '14px'
+                }}
+              >
+                {profitValue.toFixed(2)}%
+              </Text>
+            </Badge>
           </Space>
         );
       },
+      sorter: (a, b) => a.profit_percentage - b.profit_percentage,
     },
     {
-      title: 'Exchanges',
-      key: 'exchanges',
+      title: 'Prices',
+      key: 'prices',
       width: 150,
       render: (_, record) => (
-        <Space direction="vertical" size={2}>
-          <div className="exchange-row">
-            <Tag color="blue" className="exchange-tag">
-              {record.buy_exchange_name || 'Unknown'}
-            </Tag>
-          </div>
-          <div className="exchange-row">
-            <Tag color="green" className="exchange-tag">
-              {record.sell_exchange_name || 'Unknown'}
-            </Tag>
-          </div>
+        <Space direction="vertical" size={0}>
+          {record.prices && Object.entries(record.prices).slice(0, 2).map(([pair, price]) => (
+            <div key={pair} className="price-row">
+              <Text type="secondary" style={{ fontSize: '10px' }}>
+                {pair}: {typeof price === 'number' ? price.toFixed(6) : price}
+              </Text>
+            </div>
+          ))}
         </Space>
       ),
     },
@@ -75,7 +89,7 @@ const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }
           cancelled: { color: 'red', text: 'CANCELLED' }
         };
         
-        const config = statusConfig[status] || { color: 'default', text: status?.toUpperCase() || 'UNKNOWN' };
+        const config = statusConfig[status] || { color: 'default', text: 'ACTIVE' };
         
         return (
           <Tag color={config.color} className="status-tag">
@@ -88,22 +102,25 @@ const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }
       title: (
         <Space size={4}>
           Actions
-          <Tooltip title="Click on opportunities to view details">
+          <Tooltip title="Real triangular arbitrage opportunities">
             <InfoCircleOutlined style={{ color: '#999', fontSize: '12px' }} />
           </Tooltip>
         </Space>
       ),
       key: 'actions',
-      width: 80,
+      width: 100,
       render: (_, record) => (
         <Space>
           <Tag 
-            color="gold" 
+            color="blue" 
             className="action-tag"
             style={{ cursor: 'pointer' }}
-            onClick={() => console.log('View details:', record)}
+            onClick={() => {
+              console.log('Opportunity details:', record);
+              // You can implement a modal or detailed view here
+            }}
           >
-            View
+            Details
           </Tag>
         </Space>
       ),
@@ -114,15 +131,10 @@ const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }
   const processedData = opportunities
     .slice(0, showAll ? opportunities.length : maxRows)
     .map((opp, index) => ({
-      key: opp.id || `opp-${index}`,
-      symbol: opp.symbol || 'N/A',
+      key: opp.id || `opp-${index}-${Date.now()}`,
+      ...opp,
       profit_percentage: opp.profit_percentage || 0,
-      buy_exchange_name: opp.buy_exchange_name || 'Unknown',
-      sell_exchange_name: opp.sell_exchange_name || 'Unknown',
       status: opp.status || 'active',
-      buy_price: opp.buy_price,
-      sell_price: opp.sell_price,
-      detected_at: opp.detected_at,
     }));
 
   if (processedData.length === 0) {
@@ -131,7 +143,7 @@ const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }
         <Text type="secondary">No active arbitrage opportunities found</Text>
         <div style={{ marginTop: 8 }}>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            New opportunities will appear here when detected
+            The system is scanning for triangular arbitrage opportunities...
           </Text>
         </div>
       </div>
@@ -145,7 +157,7 @@ const OpportunitiesTable = ({ opportunities = [], maxRows = 5, showAll = false }
         dataSource={processedData}
         pagination={false}
         size="small"
-        scroll={{ y: 240 }}
+        scroll={{ y: 400 }}
         className="opportunities-table"
         onRow={(record) => ({
           onClick: () => console.log('Opportunity clicked:', record),

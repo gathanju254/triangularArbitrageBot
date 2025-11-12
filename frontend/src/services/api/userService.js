@@ -182,23 +182,209 @@ async getApiKeys() {
   }
 },
 
-  async addApiKey(apiKeyData) {
-    try {
-      const response = await api.post("/users/api-keys/", apiKeyData);
-      console.log("✅ API key added successfully");
-      return response.data;
-    } catch (error) {
-      console.error("❌ Failed to add API key:", error);
-
-      if (error.response?.status === 400) {
-        throw new Error("Invalid API key data");
-      } else if (error.response?.status === 401) {
-        throw new Error("Authentication required");
-      } else {
-        throw new Error("Failed to add API key");
-      }
+/** ================================
+ * ✅ API KEY VALIDATION
+ * ================================ */
+async validateApiKey(apiKeyId) {
+  try {
+    console.log(`🔍 Validating API key: ${apiKeyId}`);
+    
+    const response = await api.post(`/users/api-keys/${apiKeyId}/validate/`);
+    console.log("✅ API key validation completed", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Failed to validate API key:", error);
+    
+    // Enhanced null-safe error handling
+    if (!error) {
+      throw new Error("Unknown error occurred during API key validation");
     }
-  },
+    
+    // Handle null response safely
+    if (error.response) {
+      const status = error.response.status;
+      const data = error.response.data || {};
+      
+      if (status === 400) {
+        throw new Error(data.message || data.error || "API key validation failed");
+      } else if (status === 401) {
+        throw new Error("Authentication required - please log in again");
+      } else if (status === 404) {
+        throw new Error("API key not found");
+      } else if (status === 500) {
+        throw new Error("Server error during validation");
+      } else {
+        throw new Error(data.message || data.error || `Validation failed with status ${status}`);
+      }
+    } else if (error.request) {
+      // Network error
+      throw new Error("Network error - cannot reach server");
+    } else {
+      // Other errors
+      throw new Error(error.message || "Failed to validate API key");
+    }
+  }
+},
+
+async addApiKey(apiKeyData) {
+  try {
+    console.log("🔑 Adding API key for:", apiKeyData.exchange);
+
+    // Enhanced validation for OKX and other exchanges
+    const exchangeLower = apiKeyData.exchange.toLowerCase();
+    
+    // OKX requires passphrase
+    if (exchangeLower === 'okx' && !apiKeyData.passphrase?.trim()) {
+      throw new Error('OKX requires a passphrase for API authentication');
+    }
+
+    // Coinbase and KuCoin also require passphrase
+    if ((exchangeLower === 'coinbase' || exchangeLower === 'kucoin') && !apiKeyData.passphrase?.trim()) {
+      throw new Error(`${apiKeyData.exchange} requires a passphrase for API authentication`);
+    }
+
+    // Validate required fields
+    if (!apiKeyData.api_key?.trim()) {
+      throw new Error('API key is required');
+    }
+    if (!apiKeyData.secret_key?.trim()) {
+      throw new Error('Secret key is required');
+    }
+
+    // Validate API key format (basic checks)
+    if (apiKeyData.api_key.trim().length < 20) {
+      throw new Error('API key appears to be too short');
+    }
+    if (apiKeyData.secret_key.trim().length < 20) {
+      throw new Error('Secret key appears to be too short');
+    }
+
+    const payload = {
+      exchange: apiKeyData.exchange,
+      label: apiKeyData.label || '',
+      api_key: apiKeyData.api_key.trim(),
+      secret_key: apiKeyData.secret_key.trim(),
+      passphrase: apiKeyData.passphrase ? apiKeyData.passphrase.trim() : '',
+      is_active: apiKeyData.is_active !== undefined ? apiKeyData.is_active : true,
+      permissions: ['read', 'trade'] // Default permissions for new keys
+    };
+
+    console.log("📤 Sending API key payload:", {
+      exchange: payload.exchange,
+      label: payload.label,
+      has_api_key: !!payload.api_key,
+      has_secret: !!payload.secret_key,
+      has_passphrase: !!payload.passphrase,
+      is_active: payload.is_active,
+      permissions: payload.permissions
+    });
+
+    const response = await api.post("/users/api-keys/", payload);
+    
+    // Handle different response structures
+    let result;
+    if (response.data && typeof response.data === 'object') {
+      // If response is already the API key object
+      if (response.data.id) {
+        result = response.data;
+      } 
+      // If response has api_key nested
+      else if (response.data.api_key) {
+        result = response.data.api_key;
+      }
+      // If response has data field
+      else if (response.data.data) {
+        result = response.data.data;
+      }
+      // Use as-is
+      else {
+        result = response.data;
+      }
+    } else {
+      result = response.data;
+    }
+
+    console.log("✅ API key added successfully:", {
+      id: result.id,
+      exchange: result.exchange,
+      label: result.label,
+      is_active: result.is_active,
+      is_validated: result.is_validated
+    });
+
+    return result;
+
+  } catch (error) {
+    console.error("❌ Failed to add API key:", error);
+
+    // Enhanced error handling with detailed messages
+    if (error?.response?.status === 400) {
+      const errorData = error.response.data;
+      
+      console.log("🔍 Error response details:", errorData);
+      
+      // Handle different error formats
+      if (errorData.details) {
+        // New format with details object
+        const firstError = Object.values(errorData.details)[0];
+        throw new Error(firstError || "Invalid API key data");
+      } else if (errorData.error) {
+        // Direct error message
+        throw new Error(errorData.error);
+      } else if (typeof errorData === 'string') {
+        // String error
+        throw new Error(errorData);
+      } else if (errorData.passphrase) {
+        // Field-specific error for passphrase
+        throw new Error(errorData.passphrase);
+      } else if (errorData.api_key) {
+        // Field-specific error for API key
+        throw new Error(errorData.api_key);
+      } else if (errorData.secret_key) {
+        // Field-specific error for secret key
+        throw new Error(errorData.secret_key);
+      } else if (errorData.exchange) {
+        // Field-specific error for exchange
+        throw new Error(errorData.exchange);
+      } else if (errorData.non_field_errors) {
+        // Non-field errors
+        throw new Error(Array.isArray(errorData.non_field_errors) 
+          ? errorData.non_field_errors[0] 
+          : errorData.non_field_errors
+        );
+      } else {
+        // Generic field errors
+        const errorMsg =
+          errorData.exchange?.[0] ||
+          errorData.api_key?.[0] ||
+          errorData.secret_key?.[0] ||
+          errorData.passphrase?.[0] ||
+          "Invalid API key data. Please check your credentials.";
+        throw new Error(errorMsg);
+      }
+    } else if (error?.response?.status === 409) {
+      throw new Error("API key already exists for this exchange");
+    } else if (error?.response?.status === 401) {
+      throw new Error("Authentication required - please log in again");
+    } else if (error?.response?.status === 403) {
+      throw new Error("Permission denied - you cannot add API keys");
+    } else if (error?.response?.status === 404) {
+      throw new Error("API endpoint not found - please check server configuration");
+    } else if (!error?.response) {
+      // Network errors
+      if (error.code === 'ECONNABORTED') {
+        throw new Error("Request timeout - server is not responding");
+      } else if (error.message?.includes('Network Error')) {
+        throw new Error("Network error - cannot reach server");
+      } else {
+        throw new Error("Network error - please check your connection");
+      }
+    } else {
+      // Other server errors
+      throw new Error(error.message || "Failed to add API key. Please try again.");
+    }
+  }
+},
 
   async updateApiKey(id, apiKeyData) {
     try {

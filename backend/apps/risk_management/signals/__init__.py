@@ -1,1 +1,0 @@
-# backend/apps/trading/signals/__init__.py

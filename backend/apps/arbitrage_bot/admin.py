@@ -6,10 +6,6 @@ from django.utils.timezone import localtime
 # Import models from arbitrage_bot app only
 from .models.trade import TradeRecord
 from .models.arbitrage_opportunity import ArbitrageOpportunityRecord
-from .models.risk_alert import RiskAlert
-
-# REMOVED: BotConfiguration import and registration from this file
-
 
 @admin.register(TradeRecord)
 class TradeRecordAdmin(admin.ModelAdmin):
@@ -79,54 +75,3 @@ class ArbitrageOpportunityAdmin(admin.ModelAdmin):
         return f"{float(obj.profit_percentage):.4f}%"
     profit_percentage_display.short_description = 'Profit %'
     profit_percentage_display.admin_order_field = 'profit_percentage'
-
-
-@admin.register(RiskAlert)
-class RiskAlertAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'user_display',
-        'alert_type',
-        'severity',
-        'metric',
-        'value',
-        'threshold',
-        'is_resolved',
-        'created_at',
-        'resolved_at',
-    )
-    list_filter = ('severity', 'is_resolved')
-    search_fields = ('alert_type', 'message', 'metric', 'user__username')
-    readonly_fields = ('created_at', 'resolved_at')
-    ordering = ('-created_at',)
-    fieldsets = (
-        (None, {
-            'fields': (
-                'user',
-                'alert_type',
-                'severity',
-                'message',
-            )
-        }),
-        ('Metric & Threshold', {
-            'fields': (
-                'metric',
-                'value',
-                'threshold',
-            )
-        }),
-        ('Status', {
-            'fields': (
-                'is_resolved',
-                'resolved_at',
-                'created_at',
-            )
-        }),
-    )
-
-    def user_display(self, obj):
-        try:
-            return obj.user.username
-        except Exception:
-            return str(obj.user)
-    user_display.short_description = 'User'

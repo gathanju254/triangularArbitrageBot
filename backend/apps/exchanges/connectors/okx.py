@@ -1,5 +1,6 @@
 # backend/apps/exchanges/connectors/okx.py
 
+import logging
 import hmac
 import hashlib
 import time
@@ -12,6 +13,8 @@ from django.utils import timezone
 
 from .base import BaseExchangeConnector
 from core.exceptions import ExchangeConnectionError, InvalidOrderError
+
+logger = logging.getLogger(__name__)
 
 
 class OkxConnector(BaseExchangeConnector):
@@ -387,11 +390,40 @@ class OkxConnector(BaseExchangeConnector):
         return type_map.get(okx_order_type, okx_order_type)
 
     def validate_credentials(self) -> bool:
-        """Validate API credentials by testing balance endpoint"""
+        """Validate OKX API credentials with comprehensive testing"""
         try:
-            self.get_balance()
-            return True
-        except Exception:
+            if not self.api_key or not self.api_secret or not self.passphrase:
+                return False
+                
+            # Test with a simple API call that doesn't require specific permissions
+            endpoint = '/api/v5/account/balance'
+            
+            timestamp = self._get_timestamp()
+            signature = self._sign_request(timestamp, 'GET', endpoint)
+            
+            headers = {
+                'OK-ACCESS-KEY': self.api_key,
+                'OK-ACCESS-SIGN': signature,
+                'OK-ACCESS-TIMESTAMP': timestamp,
+                'OK-ACCESS-PASSPHRASE': self.passphrase,
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.get(
+                f"{self.base_url}{endpoint}",
+                headers=headers,
+                timeout=10
+            )
+            
+            # Check if request was successful and credentials are valid
+            if response.status_code == 200:
+                result = response.json()
+                return result.get('code') == '0'
+            else:
+                return False
+                
+        except Exception as e:
+            logger.error(f"OKX credential validation failed: {e}")
             return False
 
     def get_server_time(self) -> Dict[str, Any]:

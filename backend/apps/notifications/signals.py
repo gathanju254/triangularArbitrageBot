@@ -17,7 +17,7 @@ except ImportError:
 
 # Risk alerts model - create if doesn't exist
 try:
-    from apps.arbitrage_bot.models.risk_alert import RiskAlert
+    from apps.risk_management.models import RiskAlert
     RISK_MODELS_AVAILABLE = True
 except ImportError:
     RISK_MODELS_AVAILABLE = False

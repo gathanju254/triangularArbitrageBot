@@ -1,7 +1,7 @@
 // frontend/src/pages/Dashboard/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Typography, Alert } from 'antd';
-import { RocketOutlined, LineChartOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Typography, Alert, Button, Space } from 'antd';
+import { RocketOutlined, LineChartOutlined, SyncOutlined } from '@ant-design/icons';
 import { dashboardService } from '../../services/api/dashboardService';
 import { ArbitrageLoader, DataLoader } from '../../components/common/LoadingSpinner/LoadingSpinner';
 import StatsCards from '../../components/dashboard/StatsCards/StatsCards';
@@ -9,13 +9,14 @@ import OpportunitiesTable from '../../components/dashboard/OpportunitiesTable/Op
 import ProfitChart from '../../components/dashboard/ProfitChart/ProfitChart';
 import './Dashboard.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -24,7 +25,7 @@ const Dashboard = () => {
     const interval = setInterval(() => {
       setRefreshing(true);
       loadDashboardData().finally(() => setRefreshing(false));
-    }, 30000); // Update every 30 seconds
+    }, 15000); // Update every 15 seconds
     
     return () => clearInterval(interval);
   }, []);
@@ -34,12 +35,20 @@ const Dashboard = () => {
       const data = await dashboardService.getDashboardOverview();
       setDashboardData(data);
       setError(null);
+      setLastUpdate(new Date());
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
-      setError('Failed to load dashboard data. Using demo data.');
+      setError('Failed to load dashboard data. Please check if the backend server is running.');
+      // You could fall back to mock data here if needed
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    setRefreshing(true);
+    loadDashboardData();
   };
 
   if (loading && !dashboardData) {
@@ -53,26 +62,47 @@ const Dashboard = () => {
     );
   }
 
-  const { stats, opportunities, profit_history, using_mock_data } = dashboardData || {};
+  const { 
+    stats, 
+    opportunities, 
+    profit_history, 
+    system_status,
+    market_stats,
+    engine_stats,
+    using_mock_data 
+  } = dashboardData || {};
 
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
-        <Title level={2}>Arbitrage Dashboard</Title>
-        <div className="dashboard-subtitle">
-          Real-time triangular arbitrage opportunities and performance metrics
-          {refreshing && (
-            <span className="dashboard-refresh-indicator">
-              • Refreshing...
-            </span>
-          )}
-        </div>
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space>
+            <Title level={2} style={{ margin: 0 }}>Arbitrage Dashboard</Title>
+            <Button 
+              icon={<SyncOutlined spin={refreshing} />} 
+              onClick={handleManualRefresh}
+              size="small"
+              disabled={refreshing}
+            >
+              Refresh
+            </Button>
+          </Space>
+          <div className="dashboard-subtitle">
+            Real-time triangular arbitrage opportunities across multiple exchanges
+            {lastUpdate && (
+              <span className="dashboard-update-time">
+                • Last update: {lastUpdate.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        </Space>
       </div>
 
       {error && (
         <Alert
-          message={error}
-          type="warning"
+          message="Connection Error"
+          description={error}
+          type="error"
           showIcon
           closable
           className="dashboard-alert"
@@ -81,14 +111,50 @@ const Dashboard = () => {
 
       {using_mock_data && (
         <Alert
-          message="Demo Mode"
-          description="Currently displaying demo data. Connect to backend for live trading data."
+          message="Demo Mode Active"
+          description="Currently displaying sample data. Connect to live exchanges for real trading."
           type="info"
           showIcon
           closable
           className="dashboard-alert"
         />
       )}
+
+      {/* System Status Overview */}
+      <Card size="small" className="dashboard-status-overview">
+        <Row gutter={16}>
+          <Col span={6}>
+            <div className="status-item">
+              <Text type="secondary">System Status</Text>
+              <div>
+                <Text strong style={{ color: system_status === 'running' ? '#52c41a' : '#ff4d4f' }}>
+                  {system_status?.toUpperCase() || 'UNKNOWN'}
+                </Text>
+              </div>
+            </div>
+          </Col>
+          <Col span={6}>
+            <div className="status-item">
+              <Text type="secondary">Market Symbols</Text>
+              <div><Text strong>{market_stats?.total_symbols || 0}</Text></div>
+            </div>
+          </Col>
+          <Col span={6}>
+            <div className="status-item">
+              <Text type="secondary">Triangles</Text>
+              <div><Text strong>{engine_stats?.total_triangles || 0}</Text></div>
+            </div>
+          </Col>
+          <Col span={6}>
+            <div className="status-item">
+              <Text type="secondary">Profit Threshold</Text>
+              <div>
+                <Text strong>{engine_stats?.min_profit_threshold || 0.2}%</Text>
+              </div>
+            </div>
+          </Col>
+        </Row>
+      </Card>
 
       {/* Key Statistics */}
       <StatsCards stats={stats} loading={loading || refreshing} />
@@ -97,96 +163,106 @@ const Dashboard = () => {
         <Col xs={24} lg={12}>
           <Card 
             title={
-              <span className="dashboard-card-title">
+              <Space>
                 <RocketOutlined className="dashboard-card-icon" />
                 Active Opportunities
-                {refreshing && (
-                  <DataLoader size="small" text="" className="dashboard-card-loader" />
+                {opportunities?.length > 0 && (
+                  <span className="opportunity-count-badge">
+                    {opportunities.length}
+                  </span>
                 )}
-              </span>
+              </Space>
             }
             loading={loading}
             className="dashboard-opportunities-card"
+            extra={
+              <Space>
+                {refreshing && <DataLoader size="small" text="" />}
+                <Button 
+                  size="small" 
+                  icon={<SyncOutlined />}
+                  onClick={handleManualRefresh}
+                >
+                  Refresh
+                </Button>
+              </Space>
+            }
           >
-            <OpportunitiesTable opportunities={opportunities} />
+            <OpportunitiesTable 
+              opportunities={opportunities} 
+              showAll={false}
+              maxRows={8}
+            />
           </Card>
         </Col>
 
         <Col xs={24} lg={12}>
           <Card 
             title={
-              <span className="dashboard-card-title">
+              <Space>
                 <LineChartOutlined className="dashboard-card-icon" />
                 Profit History (7 Days)
-              </span>
+              </Space>
             }
             loading={loading}
             className="dashboard-chart-card"
-            extra={
-              refreshing && <DataLoader size="small" text="" />
-            }
           >
             <ProfitChart data={profit_history} />
           </Card>
         </Col>
       </Row>
 
-      {/* Quick Actions */}
-      <Row gutter={[16, 16]} className="dashboard-actions-row">
-        <Col xs={24} md={8}>
-          <Card 
-            title="Quick Start"
-            className="dashboard-quick-actions-card"
-            actions={[
-              <span key="trading" className="dashboard-action-item">Go to Trading</span>,
-              <span key="settings" className="dashboard-action-item">Configure Settings</span>,
-              <span key="analytics" className="dashboard-action-item">View Analytics</span>
-            ]}
-          >
-            <p className="dashboard-card-description">
-              Start trading immediately or configure your arbitrage strategies.
-            </p>
-          </Card>
-        </Col>
-        
-        <Col xs={24} md={8}>
-          <Card 
-            title="System Status"
-            className="dashboard-status-card"
-          >
-            <div className="dashboard-status-item">
-              <span className="dashboard-status-label">API Connection:</span>
-              <span className="dashboard-status-value dashboard-status-connected">Connected</span>
-            </div>
-            <div className="dashboard-status-item">
-              <span className="dashboard-status-label">Data Feed:</span>
-              <span className="dashboard-status-value dashboard-status-connected">Live</span>
-            </div>
-            <div className="dashboard-status-item">
-              <span className="dashboard-status-label">Last Update:</span>
-              <span className="dashboard-status-value">
-                {new Date().toLocaleTimeString()}
-              </span>
-            </div>
-          </Card>
-        </Col>
-        
-        <Col xs={24} md={8}>
+      {/* Additional Info Cards */}
+      <Row gutter={[16, 16]} className="dashboard-info-row">
+        <Col xs={24} md={12}>
           <Card 
             title="Recent Activity"
+            size="small"
             className="dashboard-activity-card"
           >
-            <div className="dashboard-activity-item">
-              <div className="dashboard-activity-type">Opportunity Found</div>
-              <div className="dashboard-activity-time">2 minutes ago</div>
+            {opportunities?.slice(0, 3).map((opp, index) => (
+              <div key={index} className="activity-item">
+                <div className="activity-type">
+                  <Text strong>Opportunity Found</Text>
+                </div>
+                <div className="activity-details">
+                  <Text type="secondary">{opp.triangle?.join(' → ')}</Text>
+                </div>
+                <div className="activity-profit">
+                  <Text 
+                    strong 
+                    style={{ color: opp.profit_percentage > 0 ? '#52c41a' : '#ff4d4f' }}
+                  >
+                    {opp.profit_percentage.toFixed(2)}%
+                  </Text>
+                </div>
+              </div>
+            ))}
+            {(!opportunities || opportunities.length === 0) && (
+              <Text type="secondary">No recent activity</Text>
+            )}
+          </Card>
+        </Col>
+        
+        <Col xs={24} md={12}>
+          <Card 
+            title="Exchange Status"
+            size="small"
+            className="dashboard-exchange-card"
+          >
+            <div className="exchange-status-item">
+              <span className="exchange-name">Binance</span>
+              <span className="exchange-status connected">Connected</span>
             </div>
-            <div className="dashboard-activity-item">
-              <div className="dashboard-activity-type">Trade Executed</div>
-              <div className="dashboard-activity-time">5 minutes ago</div>
+            <div className="exchange-status-item">
+              <span className="exchange-name">OKX</span>
+              <span className="exchange-status connected">Connected</span>
             </div>
-            <div className="dashboard-activity-item">
-              <div className="dashboard-activity-type">Balance Updated</div>
-              <div className="dashboard-activity-time">10 minutes ago</div>
+            <div className="exchange-status-item">
+              <span className="exchange-name">Market Data</span>
+              <span className="exchange-status connected">
+                {market_stats?.recent_symbols || 0} symbols
+              </span>
             </div>
           </Card>
         </Col>

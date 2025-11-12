@@ -110,7 +110,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class APIKeyViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for comprehensive API key management.
+    ViewSet for comprehensive API key management with enhanced error handling.
     """
     permission_classes = [permissions.IsAuthenticated]
     
@@ -126,24 +126,94 @@ class APIKeyViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return APIKey.objects.filter(user=self.request.user).order_by('-created_at')
     
-    def perform_create(self, serializer):
-        """Create API key using service layer"""
-        logger.info(f"🔑 Creating API key for user: {self.request.user.username}")
-        serializer.save()
+    def create(self, request, *args, **kwargs):
+        """Create API key with enhanced error handling and consistent response format"""
+        logger.info(f"🔑 Creating API key for user: {request.user.username}")
+        
+        serializer = self.get_serializer(data=request.data)
+        
+        try:
+            serializer.is_valid(raise_exception=True)
+            
+            # Additional validation for exchanges requiring passphrase
+            exchange = request.data.get('exchange', '').lower()
+            passphrase = request.data.get('passphrase', '')
+            
+            # Validate exchange-specific requirements
+            if exchange == 'okx' and not passphrase:
+                return Response({
+                    'error': 'OKX requires a passphrase for API authentication'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            elif exchange in ['coinbase', 'kucoin'] and not passphrase:
+                return Response({
+                    'error': f'{exchange.capitalize()} requires a passphrase for API authentication'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create the API key instance
+            api_key = serializer.save()
+            
+            # Clear relevant caches
+            self._clear_credentials_cache(request.user)
+            
+            # Return consistent format that frontend expects
+            response_data = {
+                'id': api_key.id,
+                'exchange': api_key.exchange,
+                'label': api_key.label,
+                'api_key': '***' + (api_key.api_key[-4:] if api_key.api_key and len(api_key.api_key) >= 4 else '****'),
+                'secret_key': '***' + (api_key.secret_key[-4:] if api_key.secret_key and len(api_key.secret_key) >= 4 else '****'),
+                'passphrase': '***' if api_key.passphrase else None,
+                'is_active': api_key.is_active,
+                'is_validated': api_key.is_validated,
+                'permissions': api_key.permissions,
+                'created_at': api_key.created_at.isoformat() if api_key.created_at else None,
+                'last_used': api_key.last_used.isoformat() if api_key.last_used else None,
+                'last_validated': api_key.last_validated.isoformat() if api_key.last_validated else None,
+            }
+            
+            logger.info(f"✅ API key created successfully for {api_key.exchange} (ID: {api_key.id})")
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except serializers.ValidationError as e:
+            logger.warning(f"❌ API key creation validation failed: {e}")
+            # Format validation errors for better frontend handling
+            formatted_errors = {}
+            for field, errors in e.detail.items():
+                if isinstance(errors, list):
+                    formatted_errors[field] = errors[0] if errors else "Invalid value"
+                else:
+                    formatted_errors[field] = str(errors)
+            
+            return Response({
+                'error': 'Validation failed',
+                'details': formatted_errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"❌ API key creation failed: {e}")
+            return Response({
+                'error': 'Failed to create API key',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def perform_update(self, serializer):
         """Update API key using service layer"""
         instance = self.get_object()
         logger.info(f"🔄 Updating API key: {instance.id}")
         serializer.save()
+        
+        # Clear relevant caches
+        self._clear_credentials_cache(instance.user)
     
     def perform_destroy(self, instance):
         """Delete API key with cache cleanup"""
         logger.info(f"🗑️ Deleting API key: {instance.id}")
+        user = instance.user
         instance.delete()
         
-        # Clear relevant caches - use local method instead of APIKeyManager
-        self._clear_credentials_cache(instance.user)
+        # Clear relevant caches
+        self._clear_credentials_cache(user)
     
     def _clear_credentials_cache(self, user):
         """Clear credentials cache for user"""
@@ -155,35 +225,53 @@ class APIKeyViewSet(viewsets.ModelViewSet):
                 f"apikey_service:user_{user.id}_stats",
             ]
             cache.delete_many(cache_keys)
+            logger.debug(f"✅ Cleared API key caches for user {user.id}")
         except Exception as e:
             logger.debug(f"Cache clearance error: {e}")
     
     def list(self, request, *args, **kwargs):
-        """List API keys with enhanced response - FIXED for frontend compatibility"""
+        """List API keys with consistent response structure"""
         try:
             queryset = self.get_queryset()
             serializer = self.get_serializer(queryset, many=True)
             
-            # Add statistics to response
+            # Format API keys data consistently
+            api_keys_data = []
+            for api_key in queryset:
+                api_keys_data.append({
+                    'id': api_key.id,
+                    'exchange': api_key.exchange,
+                    'label': api_key.label,
+                    'api_key': '***' + api_key.api_key[-4:] if api_key.api_key else '',
+                    'secret_key': '***' + api_key.secret_key[-4:] if api_key.secret_key else '',
+                    'passphrase': api_key.passphrase,
+                    'is_active': api_key.is_active,
+                    'is_validated': api_key.is_validated,
+                    'created_at': api_key.created_at.isoformat() if api_key.created_at else None,
+                    'last_used': api_key.last_used.isoformat() if api_key.last_used else None,
+                    'last_validated': api_key.last_validated.isoformat() if api_key.last_validated else None,
+                })
+            
+            # Get statistics
             stats = APIKeyService.get_user_api_key_stats(request.user)
             health = self._get_api_key_health(request.user)
             
-            # Return consistent structure that frontend expects
+            # Return consistent structure
             response_data = {
-                'api_keys': serializer.data,  # This is the main array of API keys
+                'api_keys': api_keys_data,  # Always an array
                 'statistics': stats,
                 'health_status': health,
-                'count': len(serializer.data)
+                'count': len(api_keys_data)
             }
             
-            logger.info(f"✅ API keys list response prepared with {len(serializer.data)} keys")
+            logger.info(f"✅ API keys list: {len(api_keys_data)} keys")
             return Response(response_data)
             
         except Exception as e:
             logger.error(f"❌ API keys list error: {e}")
-            # Return empty array structure to prevent frontend errors
+            # Return consistent empty structure
             return Response({
-                'api_keys': [],
+                'api_keys': [],  # Always return empty array
                 'statistics': {},
                 'health_status': {},
                 'count': 0,
@@ -195,7 +283,7 @@ class APIKeyViewSet(viewsets.ModelViewSet):
         try:
             api_keys = APIKey.objects.filter(user=user, is_active=True)
             total = api_keys.count()
-            validated = api_keys.filter(is_validated=True).count()
+            validated = api_keys.filter(is_validated=True).count();
             
             return {
                 'healthy': validated > 0,
@@ -233,6 +321,15 @@ class APIKeyViewSet(viewsets.ModelViewSet):
             result = SecurityService.test_api_key_connection(api_key, force_test=force_test)
             response_serializer = APIKeyValidationResultSerializer(result)
             
+            # Update API key validation status based on test result
+            if result.get('connected', False):
+                api_key.mark_as_validated(True)
+            else:
+                api_key.mark_as_validated(False)
+            
+            # Clear cache after validation update
+            self._clear_credentials_cache(request.user)
+            
             return Response(response_serializer.data)
             
         except Exception as e:
@@ -241,6 +338,77 @@ class APIKeyViewSet(viewsets.ModelViewSet):
                 {'error': f'Test failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+
+    @action(detail=True, methods=['post'])
+    def validate(self, request, pk=None):
+        """Validate API key connection and mark as validated/invalidated"""
+        api_key = self.get_object()
+        
+        try:
+            # Use existing validation service with enhanced error handling
+            validation_result = SecurityService.test_api_key_connection(api_key, force_test=True)
+            
+            # Update API key validation status based on test result
+            if validation_result.get('connected', False):
+                api_key.mark_as_validated(True)
+                message = "API key validated successfully"
+            else:
+                api_key.mark_as_validated(False)
+                message = validation_result.get('error', 'API key validation failed')
+            
+            # Clear cache after validation status change
+            self._clear_credentials_cache(request.user)
+            
+            logger.info(f"✅ API key {api_key.id} validation: {message}")
+
+            # Always return 200 with a consistent payload so frontend can handle success/failure uniformly
+            return Response({
+                'valid': bool(validation_result.get('connected', False)),
+                'message': message,
+                'details': validation_result or {},
+                'api_key_id': api_key.id,
+                'exchange': api_key.exchange,
+                'is_validated': api_key.is_validated,
+                'last_validated': api_key.last_validated.isoformat() if api_key.last_validated else None,
+                'permissions': api_key.permissions
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"❌ API key validation failed: {e}")
+            return Response({
+                'valid': False,
+                'message': f'Validation failed: {str(e)}',
+                'api_key_id': api_key.id,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @action(detail=False, methods=['post'])
+    def fix_encryption_issues(self, request):
+        """
+        Emergency endpoint to fix API key encryption issues.
+        This should only be used when there are known encryption problems.
+        """
+        try:
+            from ..services.security_service import SecurityService
+            results = SecurityService.fix_encrypted_api_keys(request.user)
+            
+            if results['failed'] > 0:
+                return Response({
+                    'message': f"Encryption fix completed with {results['failed']} failures",
+                    'results': results
+                }, status=status.HTTP_207_MULTI_STATUS)
+            else:
+                return Response({
+                    'message': 'Encryption issues fixed successfully',
+                    'results': results
+                })
+                
+        except Exception as e:
+            logger.error(f"❌ Encryption fix failed: {e}")
+            return Response({
+                'error': f'Encryption fix failed: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['get'])
     def health_check(self, request):
@@ -293,6 +461,9 @@ class APIKeyViewSet(viewsets.ModelViewSet):
                         'error': str(e)
                     })
             
+            # Clear cache after bulk validation
+            self._clear_credentials_cache(user)
+            
             return results
             
         except Exception as e:
@@ -341,6 +512,82 @@ class APIKeyViewSet(viewsets.ModelViewSet):
                 'recent_activity': 0,
                 'validation_rate': 0
             }
+    
+    @action(detail=False, methods=['get'])
+    def exchanges(self, request):
+        """Get available exchanges for API key creation"""
+        try:
+            exchanges = [
+                {'value': 'binance', 'label': 'Binance'},
+                {'value': 'coinbase', 'label': 'Coinbase'},
+                {'value': 'kraken', 'label': 'Kraken'},
+                {'value': 'kucoin', 'label': 'KuCoin'},
+                {'value': 'okx', 'label': 'OKX'},
+                {'value': 'huobi', 'label': 'Huobi'},
+                {'value': 'bybit', 'label': 'Bybit'}
+            ]
+            return Response(exchanges)
+        except Exception as e:
+            logger.error(f"Failed to get exchanges: {e}")
+            return Response([], status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """Toggle API key active status"""
+        api_key = self.get_object()
+        
+        try:
+            api_key.is_active = not api_key.is_active
+            api_key.save()
+            
+            # Clear cache after status change
+            self._clear_credentials_cache(request.user)
+            
+            logger.info(f"✅ API key {api_key.id} active status set to {api_key.is_active}")
+            
+            return Response({
+                'id': api_key.id,
+                'is_active': api_key.is_active,
+                'message': f"API key {'activated' if api_key.is_active else 'deactivated'} successfully"
+            })
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to toggle API key active status: {e}")
+            return Response({
+                'error': f'Failed to update API key status: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def validate_credentials(self, request):
+        """Validate exchange credentials without saving"""
+        from ..serializers import ExchangeCredentialsSerializer
+        
+        serializer = ExchangeCredentialsSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        exchange = serializer.validated_data['exchange']
+        api_key = serializer.validated_data['api_key']
+        secret_key = serializer.validated_data['secret_key']
+        passphrase = serializer.validated_data.get('passphrase')
+        
+        try:
+            # Use the exchange service to validate credentials
+            from apps.exchanges.services import ExchangeService
+            exchange_service = ExchangeService.get_exchange_by_code(exchange)
+            validation_result = exchange_service.test_api_key_connection(
+                exchange, api_key, secret_key, passphrase
+            )
+            
+            return Response(validation_result)
+            
+        except Exception as e:
+            logger.error(f"❌ Credential validation failed: {e}")
+            return Response({
+                'error': f'Validation failed: {str(e)}',
+                'valid': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ChangePasswordView(generics.UpdateAPIView):
@@ -528,7 +775,7 @@ class UserDashboardView(APIView):
         try:
             api_keys = APIKey.objects.filter(user=user, is_active=True)
             total = api_keys.count()
-            validated = api_keys.filter(is_validated=True).count()
+            validated = api_keys.filter(is_validated=True).count();
             
             return {
                 'healthy': validated > 0,

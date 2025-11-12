@@ -8,16 +8,12 @@ from apps.users.utils.security import (
     decrypt_data,
     safe_encrypt_data,
     safe_decrypt_data,
+    is_encrypted,
 )
 import logging
 
 logger = logging.getLogger(__name__)
 
-# backend/apps/users/models.py
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.utils import timezone
-from django.core.exceptions import ValidationError
 
 class User(AbstractUser):
     """Custom User model with additional fields"""
@@ -61,6 +57,16 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.user_type})"
     
+    @property
+    def has_active_api_keys(self):
+        """Check if user has any active API keys"""
+        return self.api_keys.filter(is_active=True).exists()
+    
+    @property
+    def api_key_count(self):
+        """Get count of API keys"""
+        return self.api_keys.count()
+
 
 class UserProfile(models.Model):
     RISK_TOLERANCE_CHOICES = [
@@ -96,6 +102,7 @@ class UserProfile(models.Model):
             raise ValidationError({'max_daily_loss': 'Max daily loss cannot be negative'})
         if self.max_position_size < 0:
             raise ValidationError({'max_position_size': 'Max position size cannot be negative'})
+
 
 class APIKey(models.Model):
     EXCHANGE_CHOICES = [
@@ -153,10 +160,16 @@ class APIKey(models.Model):
         verbose_name = 'API Key'
         verbose_name_plural = 'API Keys'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'exchange']),
+            models.Index(fields=['is_active', 'is_validated']),
+            models.Index(fields=['created_at']),
+        ]
 
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
-        return f"{self.user.username} - {self.exchange} - {self.label or 'No Label'} ({status})"
+        validated = "Validated" if self.is_validated else "Not Validated"
+        return f"{self.user.username} - {self.exchange} - {self.label or 'No Label'} ({status}, {validated})"
 
     def clean(self):
         """Validate API key data before saving"""
@@ -178,37 +191,20 @@ class APIKey(models.Model):
             })
         
         # Validate permissions
-        if self.permissions and not all(perm in [p[0] for p in self.PERMISSION_SCOPES] for perm in self.permissions):
+        valid_permissions = [p[0] for p in self.PERMISSION_SCOPES]
+        if self.permissions and not all(perm in valid_permissions for perm in self.permissions):
             raise ValidationError({
-                'permissions': f'Invalid permissions. Must be one of: {[p[0] for p in self.PERMISSION_SCOPES]}'
+                'permissions': f'Invalid permissions. Must be one of: {valid_permissions}'
             })
 
     def _is_already_encrypted(self, value: str) -> bool:
         """
-        Check if a value is already encrypted.
-        Uses multiple strategies to detect encrypted data.
+        Check if a value is already encrypted using the security utility.
         """
         if not value:
             return False
         
-        # Strategy 1: Check for legacy 'encrypted:' prefix
-        if value.startswith('encrypted:'):
-            return True
-        
-        # Strategy 2: Check if it looks like a Fernet token
-        # Fernet tokens are URL-safe base64, typically 100+ characters
-        if len(value) >= 100 and all(c in 
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=' 
-            for c in value):
-            try:
-                # Try to decode as base64
-                import base64
-                base64.urlsafe_b64decode(value)
-                return True
-            except Exception:
-                pass
-        
-        return False
+        return is_encrypted(value)
 
     def _encrypt_field(self, field_name: str, use_legacy_prefix: bool = False) -> bool:
         """
@@ -359,7 +355,7 @@ class APIKey(models.Model):
         try:
             decrypted_data = {}
             
-            # Decrypt each field individually
+            # Decrypt each field individually with better error handling
             for field_name in ['api_key', 'secret_key', 'passphrase']:
                 value = getattr(self, field_name)
                 
@@ -372,17 +368,26 @@ class APIKey(models.Model):
                     value = value[len('encrypted:'):]
                 
                 try:
-                    decrypted_data[field_name] = safe_decrypt_data(value, fallback_to_token=False)
+                    # Use safe decryption with multiple fallback strategies
+                    decrypted_value = safe_decrypt_data(
+                        value, 
+                        fallback_to_token=True,  # Return original if decryption fails
+                        handle_legacy_prefix=False  # Already handled above
+                    )
+                    decrypted_data[field_name] = decrypted_value
+                    
                 except Exception as e:
-                    logger.error(f"Failed to decrypt {field_name}: {e}")
-                    raise ValueError(f"Failed to decrypt {field_name}") from e
+                    logger.error(f"❌ Failed to decrypt {field_name} for API key {self.id}: {e}")
+                    # If decryption fails, return the original value and log the issue
+                    decrypted_data[field_name] = value
+                    raise ValueError(f"Failed to decrypt {field_name}. The encryption key may have changed.") from e
             
             logger.debug("✅ Successfully retrieved decrypted keys")
             return decrypted_data
             
         except Exception as e:
-            logger.error(f"❌ Failed to get decrypted keys: {e}")
-            raise ValueError("Failed to decrypt API key data") from e
+            logger.error(f"❌ Failed to get decrypted keys for API key {self.id}: {e}")
+            raise ValueError("Failed to decrypt API key data. The encryption key may have changed.") from e
 
     def mark_as_used(self) -> None:
         """Mark the API key as used (update last_used timestamp)"""
@@ -394,7 +399,16 @@ class APIKey(models.Model):
         """Mark the API key as validated or invalidated"""
         self.is_validated = is_valid
         self.last_validated = timezone.now()
-        self.save(update_fields=['is_validated', 'last_validated'])
+        
+        # Update fields that need saving
+        update_fields = ['is_validated', 'last_validated']
+        
+        # If invalidating, also check if we should deactivate
+        if not is_valid:
+            self.is_active = False
+            update_fields.append('is_active')
+        
+        self.save(update_fields=update_fields)
         logger.info(f"✅ Marked API key {self.id} as {'validated' if is_valid else 'invalidated'}")
 
     def validate_format(self) -> bool:
@@ -476,7 +490,6 @@ class APIKey(models.Model):
     @classmethod
     def get_trading_keys_for_user(cls, user):
         """Get API keys with trading permissions"""
-        # Manual filtering instead of contains lookup
         trading_keys = []
         all_keys = cls.objects.filter(user=user, is_active=True, is_validated=True)
         
@@ -485,6 +498,15 @@ class APIKey(models.Model):
                 trading_keys.append(key)
         
         return trading_keys
+
+    @classmethod
+    def get_keys_requiring_validation(cls, user):
+        """Get API keys that need validation"""
+        return cls.objects.filter(
+            user=user, 
+            is_active=True, 
+            is_validated=False
+        )
 
     @property
     def requires_passphrase(self) -> bool:
@@ -502,6 +524,35 @@ class APIKey(models.Model):
         if self.label:
             return f"{self.exchange} - {self.label}"
         return self.exchange
+
+    @property
+    def security_status(self) -> str:
+        """Get security status of the API key"""
+        if not self.is_encrypted:
+            return "unencrypted"
+        elif not self.is_validated:
+            return "unvalidated"
+        elif not self.is_active:
+            return "inactive"
+        else:
+            return "secure"
+
+    def get_security_info(self) -> dict:
+        """Get comprehensive security information"""
+        return {
+            'id': self.id,
+            'exchange': self.exchange,
+            'is_encrypted': self.is_encrypted,
+            'is_active': self.is_active,
+            'is_validated': self.is_validated,
+            'requires_passphrase': self.requires_passphrase,
+            'has_passphrase': bool(self.passphrase),
+            'permissions': self.permissions,
+            'last_used': self.last_used,
+            'last_validated': self.last_validated,
+            'security_status': self.security_status,
+            'age_days': (timezone.now() - self.created_at).days if self.created_at else None,
+        }
 
 
 class APIKeyUsageLog(models.Model):
@@ -577,7 +628,7 @@ class APIKeyUsageLog(models.Model):
         if not data:
             return data
             
-        sensitive_fields = ['api_key', 'secret_key', 'passphrase', 'password', 'token']
+        sensitive_fields = ['api_key', 'secret_key', 'passphrase', 'password', 'token', 'signature']
         sanitized = data.copy()
         
         for field in sensitive_fields:
@@ -590,7 +641,7 @@ class APIKeyUsageLog(models.Model):
     def get_usage_statistics(cls, api_key: APIKey, days: int = 7) -> dict:
         """Get usage statistics for an API key"""
         from django.utils import timezone
-        from django.db.models import Count, Avg, Q
+        from django.db.models import Count, Avg, Q, Max, Min
         from datetime import timedelta
         
         start_date = timezone.now() - timedelta(days=days)
@@ -603,7 +654,14 @@ class APIKeyUsageLog(models.Model):
             successful_requests=Count('id', filter=Q(success=True)),
             failed_requests=Count('id', filter=Q(success=False)),
             avg_response_time=Avg('response_time'),
+            max_response_time=Max('response_time'),
+            min_response_time=Min('response_time'),
             success_rate=Count('id', filter=Q(success=True)) * 100.0 / Count('id')
         )
         
         return stats
+
+    @classmethod
+    def get_recent_activity(cls, api_key: APIKey, limit: int = 10):
+        """Get recent activity for an API key"""
+        return cls.objects.filter(api_key=api_key).order_by('-timestamp')[:limit]

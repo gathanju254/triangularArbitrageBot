@@ -18,6 +18,7 @@
   margin-top: 8px;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .dashboard-refresh-indicator {
@@ -47,12 +48,18 @@
   margin-top: 24px;
 }
 
+/* Info Row */
+.dashboard-info-row {
+  margin-top: 16px;
+}
+
 /* Card Styles */
 .dashboard-chart-card,
 .dashboard-opportunities-card,
 .dashboard-quick-actions-card,
 .dashboard-status-card,
-.dashboard-activity-card {
+.dashboard-activity-card,
+.dashboard-exchange-card {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #f0f0f0;
@@ -63,7 +70,8 @@
 .dashboard-opportunities-card .ant-card-body,
 .dashboard-quick-actions-card .ant-card-body,
 .dashboard-status-card .ant-card-body,
-.dashboard-activity-card .ant-card-body {
+.dashboard-activity-card .ant-card-body,
+.dashboard-exchange-card .ant-card-body {
   padding: 20px;
 }
 
@@ -112,6 +120,28 @@
 
 .dashboard-action-item:hover {
   color: #40a9ff;
+}
+
+/* Status Overview */
+.dashboard-status-overview {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.status-item {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.status-item .ant-typography-secondary {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.status-item .ant-typography strong {
+  font-size: 16px;
+  display: block;
 }
 
 /* Status Card */
@@ -167,6 +197,85 @@
   font-size: 12px;
 }
 
+/* Activity Items */
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-type {
+  flex: 1;
+  min-width: 120px;
+}
+
+.activity-details {
+  flex: 2;
+  text-align: left;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-profit {
+  flex: 0 0 60px;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Exchange Status */
+.exchange-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.exchange-status-item:last-child {
+  border-bottom: none;
+}
+
+.exchange-name {
+  font-weight: 500;
+  color: #262626;
+}
+
+.exchange-status.connected {
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.exchange-status.disconnected {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+/* Update Time */
+.dashboard-update-time {
+  color: #666;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Opportunity Count Badge */
+.opportunity-count-badge {
+  background: #1890ff;
+  color: white;
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
 /* Status Indicator Animation */
 @keyframes dashboard-pulse {
   0% { opacity: 1; }
@@ -191,10 +300,21 @@
   animation: dashboard-pulse 1.5s infinite;
 }
 
+/* Empty States */
+.dashboard-empty-state {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .dashboard-main-content .ant-col-lg-16,
+  .dashboard-main-content .ant-col-lg-12,
   .dashboard-main-content .ant-col-lg-8 {
+    margin-bottom: 16px;
+  }
+  
+  .dashboard-info-row .ant-col-md-12 {
     margin-bottom: 16px;
   }
 }
@@ -227,8 +347,33 @@
   .dashboard-opportunities-card .ant-card-body,
   .dashboard-quick-actions-card .ant-card-body,
   .dashboard-status-card .ant-card-body,
-  .dashboard-activity-card .ant-card-body {
+  .dashboard-activity-card .ant-card-body,
+  .dashboard-exchange-card .ant-card-body {
     padding: 16px;
+  }
+
+  .activity-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .activity-details {
+    padding: 0;
+    width: 100%;
+  }
+
+  .activity-profit {
+    text-align: left;
+    width: 100%;
+  }
+
+  .status-item {
+    padding: 12px 0;
+  }
+
+  .status-item .ant-typography strong {
+    font-size: 14px;
   }
 }
 
@@ -238,18 +383,32 @@
   }
 
   .dashboard-status-item,
-  .dashboard-activity-item {
+  .dashboard-activity-item,
+  .exchange-status-item {
     padding: 8px 0;
   }
 
   .dashboard-status-label,
   .dashboard-status-value,
-  .dashboard-activity-type {
+  .dashboard-activity-type,
+  .exchange-name {
     font-size: 13px;
   }
 
-  .dashboard-activity-time {
+  .dashboard-activity-time,
+  .exchange-status {
     font-size: 11px;
+  }
+
+  .activity-type,
+  .activity-details,
+  .activity-profit {
+    font-size: 12px;
+  }
+
+  .opportunity-count-badge {
+    font-size: 10px;
+    padding: 1px 4px;
   }
 }
 
@@ -263,24 +422,36 @@
   .dashboard-opportunities-card,
   .dashboard-quick-actions-card,
   .dashboard-status-card,
-  .dashboard-activity-card {
+  .dashboard-activity-card,
+  .dashboard-exchange-card,
+  .dashboard-status-overview {
     background-color: #1f1f1f;
     border-color: #303030;
   }
 
   .dashboard-card-description,
   .dashboard-status-label,
-  .dashboard-activity-time {
+  .dashboard-activity-time,
+  .dashboard-update-time,
+  .status-item .ant-typography-secondary {
     color: #8c8c8c;
   }
 
-  .dashboard-activity-type {
+  .dashboard-activity-type,
+  .exchange-name,
+  .activity-type .ant-typography {
     color: #e6e6e6;
   }
 
   .dashboard-status-item,
-  .dashboard-activity-item {
+  .dashboard-activity-item,
+  .exchange-status-item,
+  .activity-item {
     border-bottom-color: #303030;
+  }
+
+  .opportunity-count-badge {
+    background: #177ddc;
   }
 }
 
@@ -295,13 +466,20 @@
   .dashboard-opportunities-card,
   .dashboard-quick-actions-card,
   .dashboard-status-card,
-  .dashboard-activity-card {
+  .dashboard-activity-card,
+  .dashboard-exchange-card,
+  .dashboard-status-overview {
     box-shadow: none;
     border: 1px solid #ddd;
     break-inside: avoid;
   }
 
-  .dashboard-refresh-indicator {
+  .dashboard-refresh-indicator,
+  .dashboard-update-time {
+    display: none;
+  }
+
+  .ant-btn {
     display: none;
   }
 }
@@ -312,13 +490,23 @@
   .dashboard-opportunities-card,
   .dashboard-quick-actions-card,
   .dashboard-status-card,
-  .dashboard-activity-card {
+  .dashboard-activity-card,
+  .dashboard-exchange-card,
+  .dashboard-status-overview {
     border: 2px solid #000;
   }
 
   .dashboard-status-item,
-  .dashboard-activity-item {
+  .dashboard-activity-item,
+  .exchange-status-item,
+  .activity-item {
     border-bottom: 2px solid #000;
+  }
+
+  .opportunity-count-badge {
+    background: #000;
+    color: #fff;
+    border: 1px solid #000;
   }
 }
 
@@ -331,4 +519,52 @@
   .dashboard-action-item {
     transition: none;
   }
+  
+  .ant-btn .anticon-sync {
+    animation: none;
+  }
+}
+
+/* Accessibility Improvements */
+.dashboard-card-title:focus,
+.dashboard-action-item:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Focus styles for interactive elements */
+.ant-btn:focus,
+.ant-card:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Loading state improvements */
+.dashboard-loading .ant-spin-text {
+  color: #1890ff;
+  margin-top: 8px;
+}
+
+/* Custom scrollbar for tables in dashboard cards */
+.dashboard-opportunities-card .ant-table-body {
+  scrollbar-width: thin;
+  scrollbar-color: #d9d9d9 transparent;
+}
+
+.dashboard-opportunities-card .ant-table-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dashboard-opportunities-card .ant-table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-opportunities-card .ant-table-body::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.dashboard-opportunities-card .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
 }

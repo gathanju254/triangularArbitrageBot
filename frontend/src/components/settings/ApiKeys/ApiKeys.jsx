@@ -57,6 +57,13 @@ const ApiKeys = ({ onSettingsChange }) => {
     { value: 'bybit', label: 'Bybit' }
   ];
 
+  // Exchange-specific requirements
+  const EXCHANGE_REQUIREMENTS = {
+    okx: { requiresPassphrase: true },
+    coinbase: { requiresPassphrase: true },
+    kucoin: { requiresPassphrase: true }
+  };
+
   useEffect(() => {
     loadApiKeys();
   }, []);
@@ -72,16 +79,33 @@ const ApiKeys = ({ onSettingsChange }) => {
       let keysArray = [];
       if (Array.isArray(response)) {
         keysArray = response;
-      } else if (Array.isArray(response.api_keys)) {
+      } else if (response && Array.isArray(response.api_keys)) {
         keysArray = response.api_keys;
-      } else if (Array.isArray(response.data)) {
+      } else if (response && Array.isArray(response.data)) {
         keysArray = response.data;
       } else if (response && typeof response === 'object') {
+        // Try to extract keys from various possible structures
         keysArray = response.api_keys || response.data || [];
       }
       
-      // Ensure we always have an array
-      setApiKeys(Array.isArray(keysArray) ? keysArray : []);
+      // Ensure we always have an array and format consistently
+      const formattedKeys = Array.isArray(keysArray) ? keysArray.map(key => ({
+        id: key.id,
+        exchange: key.exchange,
+        label: key.label || '',
+        api_key: key.api_key || '',
+        secret_key: key.secret_key || '',
+        passphrase: key.passphrase || '',
+        is_active: key.is_active !== undefined ? key.is_active : true,
+        is_validated: key.is_validated !== undefined ? key.is_validated : false,
+        created_at: key.created_at,
+        last_used: key.last_used,
+        last_validated: key.last_validated
+      })) : [];
+      
+      console.log(`✅ Loaded ${formattedKeys.length} API keys`);
+      setApiKeys(formattedKeys);
+      
     } catch (error) {
       console.error('Failed to load API keys:', error);
       setError('Failed to load API keys: ' + error.message);
@@ -125,20 +149,41 @@ const ApiKeys = ({ onSettingsChange }) => {
   const handleValidateKey = async (keyId) => {
     setValidating(prev => ({ ...prev, [keyId]: true }));
     try {
-      // This would call a validation endpoint - you'll need to implement this in your userService
-      // For now, we'll simulate validation
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      // Call the actual validation endpoint
+      const result = await userService.validateApiKey(keyId);
       
-      // Update the key validation status locally
-      setApiKeys(prev => prev.map(key => 
-        key.id === keyId 
-          ? { ...key, is_validated: true, last_validated: new Date().toISOString() }
-          : key
-      ));
+      if (result.valid) {
+        // Update the key validation status locally
+        setApiKeys(prev => prev.map(key => 
+          key.id === keyId 
+            ? { 
+                ...key, 
+                is_validated: true, 
+                last_validated: new Date().toISOString(),
+                permissions: result.permissions || key.permissions
+              }
+            : key
+        ));
+        message.success(`API key validated successfully for ${result.exchange}`);
+      } else {
+        // Update as invalidated
+        setApiKeys(prev => prev.map(key => 
+          key.id === keyId 
+            ? { 
+                ...key, 
+                is_validated: false,
+                last_validated: new Date().toISOString()
+              }
+            : key
+        ));
+        message.error(`API key validation failed: ${result.message || 'Unknown error'}`);
+      }
       
-      message.success('API key validated successfully');
+      return result;
     } catch (error) {
-      message.error('Failed to validate API key: ' + error.message);
+      console.error('❌ API key validation error:', error);
+      message.error('Failed to validate API key: ' + (error.message || 'Unknown error'));
+      throw error;
     } finally {
       setValidating(prev => ({ ...prev, [keyId]: false }));
     }
@@ -146,6 +191,15 @@ const ApiKeys = ({ onSettingsChange }) => {
 
   const handleSubmit = async (values) => {
     try {
+      // Enhanced validation for exchanges that require passphrase
+      const exchange = values.exchange?.toLowerCase();
+      const requirements = EXCHANGE_REQUIREMENTS[exchange];
+      
+      if (requirements?.requiresPassphrase && !values.passphrase?.trim()) {
+        message.error(`${exchange.toUpperCase()} requires a passphrase for API authentication`);
+        return;
+      }
+
       if (editingKey) {
         await userService.updateApiKey(editingKey.id, values);
         message.success('API key updated successfully');
@@ -158,6 +212,7 @@ const ApiKeys = ({ onSettingsChange }) => {
       loadApiKeys();
       onSettingsChange(false);
     } catch (error) {
+      console.error('❌ Failed to save API key:', error);
       message.error('Failed to save API key: ' + error.message);
     }
   };
@@ -197,6 +252,7 @@ const ApiKeys = ({ onSettingsChange }) => {
 
   const createActionMenu = (record) => {
     const validationStatus = getValidationStatus(record);
+    const isCurrentlyValidating = validating[record.id];
     
     return (
       <Menu>
@@ -210,11 +266,11 @@ const ApiKeys = ({ onSettingsChange }) => {
         
         <Menu.Item 
           key="validate" 
-          icon={validationStatus.icon}
+          icon={isCurrentlyValidating ? <ReloadOutlined spin /> : validationStatus.icon}
           onClick={() => handleValidateKey(record.id)}
-          disabled={validating[record.id]}
+          disabled={isCurrentlyValidating}
         >
-          {validating[record.id] ? 'Validating...' : `Validate ${validationStatus.text}`}
+          {isCurrentlyValidating ? 'Validating...' : `Validate ${validationStatus.text}`}
         </Menu.Item>
         
         <Menu.Divider />
@@ -236,6 +292,18 @@ const ApiKeys = ({ onSettingsChange }) => {
         </Menu.Item>
       </Menu>
     );
+  };
+
+  const getPassphraseTooltip = (exchange) => {
+    const requirements = EXCHANGE_REQUIREMENTS[exchange?.toLowerCase()];
+    if (requirements?.requiresPassphrase) {
+      return `Required for ${exchange.toUpperCase()}`;
+    }
+    return 'Optional passphrase for exchanges that require it';
+  };
+
+  const isPassphraseRequired = (exchange) => {
+    return EXCHANGE_REQUIREMENTS[exchange?.toLowerCase()]?.requiresPassphrase || false;
   };
 
   const columns = [
@@ -297,6 +365,31 @@ const ApiKeys = ({ onSettingsChange }) => {
           </Tooltip>
         </Space>
       )
+    },
+    {
+      title: 'Passphrase',
+      dataIndex: 'passphrase',
+      key: 'passphrase',
+      width: 150,
+      render: (passphrase, record) => {
+        if (!passphrase) return <Text type="secondary">None</Text>;
+        
+        return (
+          <Space>
+            <Text code style={{ fontSize: '12px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {maskSecret(passphrase, showSecrets[record.id]?.passphrase)}
+            </Text>
+            <Tooltip title={showSecrets[record.id]?.passphrase ? 'Hide Passphrase' : 'Show Passphrase'}>
+              <Button
+                type="text"
+                size="small"
+                icon={showSecrets[record.id]?.passphrase ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                onClick={() => toggleSecretVisibility(record.id, 'passphrase')}
+              />
+            </Tooltip>
+          </Space>
+        );
+      }
     },
     {
       title: 'Validation',
@@ -416,7 +509,7 @@ const ApiKeys = ({ onSettingsChange }) => {
             showQuickJumper: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
           }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1200 }}
           locale={{ 
             emptyText: loading ? 'Loading API keys...' : 'No API keys found. Click "Add API Key" to get started.' 
           }}
@@ -439,13 +532,25 @@ const ApiKeys = ({ onSettingsChange }) => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          onValuesChange={(changedValues) => {
+            // Update passphrase requirement when exchange changes
+            if (changedValues.exchange) {
+              const isRequired = isPassphraseRequired(changedValues.exchange);
+              if (isRequired) {
+                form.setFields([{
+                  name: 'passphrase',
+                  errors: []
+                }]);
+              }
+            }
+          }}
         >
           <Form.Item
             name="exchange"
             label="Exchange"
             rules={[{ required: true, message: 'Please select an exchange' }]}
           >
-            <Select placeholder="Select exchange">
+            <Select placeholder="Select exchange" showSearch>
               {EXCHANGE_OPTIONS.map(exchange => (
                 <Option key={exchange.value} value={exchange.value}>
                   {exchange.label}
@@ -486,8 +591,19 @@ const ApiKeys = ({ onSettingsChange }) => {
 
           <Form.Item
             name="passphrase"
-            label="Passphrase (Optional)"
-            tooltip="Required for OKX, Coinbase, and KuCoin"
+            label="Passphrase"
+            tooltip={getPassphraseTooltip(form.getFieldValue('exchange'))}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const exchange = getFieldValue('exchange');
+                  if (isPassphraseRequired(exchange) && !value?.trim()) {
+                    return Promise.reject(new Error(`${exchange.toUpperCase()} requires a passphrase`));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
           >
             <Input.Password 
               placeholder="Enter passphrase if required" 

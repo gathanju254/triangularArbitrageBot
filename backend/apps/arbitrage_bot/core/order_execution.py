@@ -4,8 +4,8 @@ import os
 import time
 from typing import Dict, List, Tuple
 from ..models.trade import Trade
-from ..exchanges.binance import BinanceClient
-from ..exchanges.kraken import KrakenClient
+from apps.exchanges.connectors.binance import BinanceConnector
+from apps.exchanges.connectors.kraken import KrakenConnector
 from .risk_manager import RiskManager
 import uuid
 from datetime import datetime
@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class OrderExecutor:
     def __init__(self):
         self.exchanges = {
-            'binance': BinanceClient(),
-            'kraken': KrakenClient()
+            'binance': BinanceConnector(),
+            'kraken': KrakenConnector()
         }
         self.risk_manager = RiskManager()
         self.active_trades = {}

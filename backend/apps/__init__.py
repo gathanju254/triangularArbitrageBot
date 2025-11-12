@@ -8,5 +8,5 @@ default_app_config = {
     'exchanges': 'apps.exchanges.apps.ExchangesConfig',
     'notifications': 'apps.notifications.apps.NotificationsConfig',
     'analytics': 'apps.analytics.apps.AnalyticsConfig',
-    #'exceptions': 'apps.exceptions.apps.ExceptionsConfig',
+    #'market_data': 'apps.market_data.apps.MarketDataConfig',
 }

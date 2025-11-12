@@ -229,11 +229,11 @@ class RiskManager:
         """Check if exchange has sufficient balance for trade"""
         try:
             # Lazy import to avoid circular imports
-            from ..exchanges.binance import BinanceClient
-            from ..exchanges.kraken import KrakenClient
+            from apps.exchanges.connectors.binance import BinanceConnector
+            from apps.exchanges.connectors.kraken import KrakenConnector
             
             if exchange == 'binance':
-                client = BinanceClient()
+                client = BinanceConnector()
                 if not client.is_authenticated:
                     return False, "Binance API not authenticated"
                 
@@ -250,7 +250,7 @@ class RiskManager:
                     return False, f"Insufficient balance: ${usdt_balance:.2f} available, ${required_amount:.2f} required"
                     
             elif exchange == 'kraken':
-                client = KrakenClient()
+                client = KrakenConnector()
                 if not client.is_authenticated:
                     return False, "Kraken API not authenticated"
                 
@@ -276,11 +276,11 @@ class RiskManager:
         """Get real exchange balance for authenticated exchanges"""
         try:
             # Lazy import to avoid circular imports
-            from ..exchanges.binance import BinanceClient
-            from ..exchanges.kraken import KrakenClient
+            from apps.exchanges.connectors.binance import BinanceConnector
+            from apps.exchanges.connectors.kraken import KrakenConnector
             
             if exchange == 'binance':
-                client = BinanceClient()
+                client = BinanceConnector()
                 if not client.is_authenticated:
                     return {'error': 'Binance API not authenticated'}
                 
@@ -295,7 +295,7 @@ class RiskManager:
                     }
             
             elif exchange == 'kraken':
-                client = KrakenClient()
+                client = KrakenConnector()
                 if not client.is_authenticated:
                     return {'error': 'Kraken API not authenticated'}
                 

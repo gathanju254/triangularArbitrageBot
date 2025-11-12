@@ -69,107 +69,80 @@ class APIKeySerializer(serializers.ModelSerializer):
 
 
 class APIKeyCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating new API keys"""
-    
-    auto_validate = serializers.BooleanField(default=False, write_only=True, required=False)
+    """Serializer for creating API keys with enhanced validation"""
     
     class Meta:
         model = APIKey
-        # include auto_validate here so declared field is part of serializer fields
-        fields = ['exchange', 'label', 'api_key', 'secret_key', 'passphrase', 'is_active', 'auto_validate']
+        fields = [
+            'exchange', 'label', 'api_key', 'secret_key', 'passphrase',
+            'is_active', 'permissions'
+        ]
         extra_kwargs = {
-            'label': {'required': False, 'allow_blank': True},
-            'api_key': {
-                'required': True, 
-                'write_only': True,
-                'allow_blank': False,
-                'error_messages': {'blank': 'API key cannot be empty'}
-            },
-            'secret_key': {
-                'required': True, 
-                'write_only': True,
-                'allow_blank': False,
-                'error_messages': {'blank': 'Secret key cannot be empty'}
-            },
-            'passphrase': {
-                'required': False, 
-                'write_only': True,
-                'allow_blank': True
-            },
-            'is_active': {'default': True}
+            'api_key': {'write_only': True},
+            'secret_key': {'write_only': True},
+            'passphrase': {'write_only': True, 'required': False, 'allow_blank': True}
         }
-    
-    def validate(self, attrs):
-        """Validate API key data"""
-        exchange = attrs.get('exchange')
-        api_key = attrs.get('api_key', '').strip()
-        secret_key = attrs.get('secret_key', '').strip()
-        passphrase = attrs.get('passphrase', '').strip()
-        
-        logger.info(f"🔧 Validating API key creation for {exchange}")
-        logger.debug(f"📝 API Key length: {len(api_key)}")
-        logger.debug(f"📝 Secret Key length: {len(secret_key)}")
-        logger.debug(f"📝 Passphrase provided: {bool(passphrase)}")
-        
-        if not api_key or not secret_key:
-            raise serializers.ValidationError({
-                'api_key': 'API key is required',
-                'secret_key': 'Secret key is required'
-            })
-        
-        # Check for existing API key
-        request = self.context.get('request')
-        if request and APIKey.objects.filter(
-            user=request.user, 
-            exchange=exchange
-        ).exists():
-            raise serializers.ValidationError({
-                'exchange': f"An API key for {exchange} already exists"
-            })
-        
-        # Validate with service
-        is_valid, errors = APIKeyService.validate_api_key_data(
-            exchange, api_key, secret_key, passphrase
-        )
-        if not is_valid:
-            raise serializers.ValidationError({
-                'non_field_errors': errors
-            })
-        
-        return attrs
-    
+
+    def validate(self, data):
+        """Enhanced validation for API key creation"""
+        exchange = data.get('exchange')
+        api_key = data.get('api_key')
+        secret_key = data.get('secret_key')
+        passphrase = data.get('passphrase', '')
+
+        if not exchange or not api_key or not secret_key:
+            raise serializers.ValidationError("Exchange, api_key and secret_key are required")
+
+        # Validate exchange-specific requirements
+        ex_lower = exchange.lower()
+        if ex_lower == 'okx':
+            if not passphrase:
+                raise serializers.ValidationError({
+                    'passphrase': 'OKX requires a passphrase for API authentication'
+                })
+            
+            if api_key and len(api_key.strip()) < 20:
+                raise serializers.ValidationError({
+                    'api_key': 'OKX API key appears to be too short'
+                })
+            
+            if secret_key and len(secret_key.strip()) < 20:
+                raise serializers.ValidationError({
+                    'secret_key': 'OKX secret key appears to be too short'
+                })
+
+        elif ex_lower in ['coinbase', 'kucoin']:
+            if not passphrase:
+                raise serializers.ValidationError({
+                    'passphrase': f'{exchange} requires a passphrase for API authentication'
+                })
+
+        return data
+
     def create(self, validated_data):
-        """Create API key using the service layer"""
+        """Create API key with automatic encryption"""
         request = self.context.get('request')
-        if not request or not request.user:
-            raise serializers.ValidationError("User authentication required")
+        if request and hasattr(request, 'user'):
+            validated_data['user'] = request.user
+
+        # Set default permissions if not provided
+        if 'permissions' not in validated_data or not validated_data['permissions']:
+            validated_data['permissions'] = ['read', 'trade']
+
+        # Create the API key instance (do not save before encryption)
+        api_key = APIKey(**validated_data)
         
-        # Extract auto_validate flag
-        auto_validate = validated_data.pop('auto_validate', False)
-        
-        logger.info(f"🔑 Creating API key for {request.user.username} on {validated_data['exchange']}")
-        
+        # Encrypt the keys before saving using model helper
         try:
-            # Use the service to create the API key
-            api_key_instance = APIKeyService.create_api_key(
-                user=request.user,
-                exchange=validated_data['exchange'],
-                api_key=validated_data['api_key'],
-                secret_key=validated_data['secret_key'],
-                passphrase=validated_data.get('passphrase'),
-                label=validated_data.get('label'),
-                auto_validate=auto_validate
-            )
-            
-            logger.info(f"✅ API key created successfully: {api_key_instance.id}")
-            return api_key_instance
-            
-        except ValueError as e:
-            logger.error(f"❌ API key creation failed: {e}")
-            raise serializers.ValidationError(str(e))
+            api_key.encrypt_keys(use_legacy_prefix=False)
         except Exception as e:
-            logger.error(f"❌ Unexpected error during API key creation: {e}")
-            raise serializers.ValidationError("Failed to create API key due to system error")
+            logger.error(f"Encryption failed during API key creation: {e}")
+            raise serializers.ValidationError({
+                'non_field_errors': f'Failed to secure API keys: {str(e)}'
+            })
+
+        api_key.save()
+        return api_key
 
 
 class APIKeyDetailSerializer(serializers.ModelSerializer):
